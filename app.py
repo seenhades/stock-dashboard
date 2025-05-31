@@ -42,6 +42,30 @@ def compute_macd(series, fast=12, slow=26, signal=9):
     signal_line = macd.ewm(span=signal, adjust=False).mean()
     return macd, signal_line
 
+def detect_signals(df):
+    signal = ""
+    if len(df) < 2:
+        return "📉 資料不足無法判斷"
+
+    rsi_now = df["RSI"].iloc[-1]
+    macd_now = df["MACD"].iloc[-1]
+    signal_now = df["Signal"].iloc[-1]
+    macd_prev = df["MACD"].iloc[-2]
+    signal_prev = df["Signal"].iloc[-2]
+
+    if rsi_now < 30 and macd_prev < signal_prev and macd_now > signal_now:
+        signal = "🟢 買進訊號（RSI 超賣 + MACD 黃金交叉）"
+    elif rsi_now > 70 and macd_prev > signal_prev and macd_now < signal_now:
+        signal = "🔴 賣出訊號（RSI 超買 + MACD 死亡交叉）"
+    elif rsi_now > 70:
+        signal = "⚠️ RSI 過熱，可能超買"
+    elif rsi_now < 30:
+        signal = "⚠️ RSI 過低，可能超賣"
+    else:
+        signal = "✅ 無明顯買賣訊號"
+
+    return signal
+
 if tickers:
     for ticker in tickers:
         st.subheader(f"📊 {ticker} 技術指標分析")
@@ -53,6 +77,7 @@ if tickers:
 
         data = compute_indicators(data)
 
+        # 顯示技術圖表
         if "Close" in data.columns and "SMA20" in data.columns:
             st.line_chart(data[["Close", "SMA20"]])
         else:
@@ -64,3 +89,16 @@ if tickers:
             st.warning(f"{ticker} 的 RSI 資料無法取得")
 
         if "MACD" in data.columns and "Signal" in data.columns:
+            st.line_chart(data[["MACD", "Signal"]])
+        else:
+            st.warning(f"{ticker} 的 MACD 或 Signal 資料無法取得")
+
+        # 顯示訊號
+        if all(x in data.columns for x in ["RSI", "MACD", "Signal"]):
+            result = detect_signals(data)
+            st.success(result if "🟢" in result else result) if "🟢" in result else st.warning(result)
+
+        st.dataframe(data.tail(10))
+        st.markdown("---")
+else:
+    st.info("請選擇至少一個股票代碼以查看分析。")
