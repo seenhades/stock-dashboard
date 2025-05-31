@@ -17,28 +17,25 @@ stock_list = {
     "NTT": "9432.T"
 }
 
-# 時間範圍：抓近90天日線資料
+# 時間範圍
 end = datetime.datetime.now()
 start = end - datetime.timedelta(days=90)
 
 st.title("📈 股票技術分析儀表板")
 
+# 自動每 5 分鐘更新資料 (但實際抓的是日線資料)
 @st.cache_data(ttl=300)
 def fetch_data(symbol):
     data = yf.download(symbol, start=start, end=end, interval="1d")
-    if data.empty:
-        return None
-    if "Close" not in data.columns:
-        st.warning(f"{symbol} 資料缺少 Close 欄位")
+    if data.empty or "Close" not in data.columns:
         return None
 
     data["SMA20"] = data["Close"].rolling(window=20).mean()
 
-    delta = data["Close"].diff()
+    delta = data["Close"].diff().values  # 一維 numpy 陣列
     gain = np.where(delta > 0, delta, 0)
     loss = np.where(delta < 0, -delta, 0)
 
-    # 使用 index 對齊資料
     avg_gain = pd.Series(gain, index=data.index).rolling(window=14).mean()
     avg_loss = pd.Series(loss, index=data.index).rolling(window=14).mean()
 
@@ -52,6 +49,7 @@ def fetch_data(symbol):
 
     return data
 
+# 顯示每支股票的資訊
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
 
@@ -59,13 +57,11 @@ for name, symbol in stock_list.items():
 
     if data is None or data.empty:
         st.warning(f"{symbol} 沒有資料，請稍後再試。")
-        st.markdown("---")
         continue
 
-    # 確保至少有兩筆資料可比對前一天收盤價
+    # 顯示今日及前一日收盤價
     if len(data) < 2:
-        st.warning(f"{symbol} 資料筆數不足，無法顯示昨日比較。")
-        st.markdown("---")
+        st.warning(f"{symbol} 資料不足，無法顯示收盤價比較。")
         continue
 
     latest = data.iloc[-1]
@@ -96,8 +92,8 @@ for name, symbol in stock_list.items():
         st.write("尚無明確買賣訊號。")
 
     # 技術指標圖表
-    st.line_chart(data[["Close", "SMA20"]])
-    st.line_chart(data[["MACD", "Signal"]])
-    st.line_chart(data[["RSI"]])
+    st.line_chart(data[["Close", "SMA20"]].dropna())
+    st.line_chart(data[["MACD", "Signal"]].dropna())
+    st.line_chart(data[["RSI"]].dropna())
 
     st.markdown("---")
