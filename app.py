@@ -48,7 +48,7 @@ def calculate_kd(data, k_period=9, d_period=3):
     low_min = data['Low'].rolling(window=k_period).min()
     high_max = data['High'].rolling(window=k_period).max()
     rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
-    k = rsv.ewm(com=d_period-1, adjust=False).mean()  # 指數移動平均
+    k = rsv.ewm(com=d_period-1, adjust=False).mean()
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
@@ -125,11 +125,18 @@ for name, symbol in stock_list.items():
     # 顯示收盤價與價差
     st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-    # 顯示技術指標
+    # 顯示技術指標值
     st.write(f"RSI: {latest_rsi:.2f}")
     st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
     st.write(f"CCI: {latest_cci:.2f}")
     st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
+
+    # 顯示技術指標圖表
+    st.line_chart(data[['Close']].rename(columns={'Close': '收盤價'}))
+    st.line_chart(data[['RSI']].dropna())
+    st.line_chart(data[['MACD', 'Signal']].dropna())
+    st.line_chart(data[['CCI']].dropna())
+    st.line_chart(data[['%K', '%D']].dropna())
 
     # 綜合訊號判斷
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
