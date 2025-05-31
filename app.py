@@ -54,31 +54,26 @@ def calculate_kd(data, k_period=9, d_period=3):
 
 def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
-    # RSI訊號
     if rsi < 30:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
 
-    # MACD訊號
     if macd > signal:
         signals.append("💰 MACD黃金交叉，買進訊號")
     else:
         signals.append("⚠️ MACD死亡交叉，賣出訊號")
 
-    # CCI訊號
     if cci < -100:
         signals.append("🧊 CCI過低，可能超賣，買進訊號")
     elif cci > 100:
         signals.append("🔥 CCI過高，可能過買，賣出訊號")
 
-    # KD訊號
     if k < 20 and d < 20 and k > d:
         signals.append("💰 KD低檔黃金交叉，買進訊號")
     elif k > 80 and d > 80 and k < d:
         signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
-    # 綜合評估（簡單版）
     buy_signals = sum(1 for s in signals if "買進" in s)
     sell_signals = sum(1 for s in signals if "賣出" in s)
     if buy_signals > sell_signals:
@@ -97,24 +92,14 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 資料不足或無法取得")
         continue
 
-    try:
-        latest_close = data["Close"].iloc[-1].item()
-        prev_close = data["Close"].iloc[-2].item()
-    except Exception as e:
-        st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
-        continue
+    latest_close = data["Close"].iloc[-1]
+    prev_close = data["Close"].iloc[-2]
 
-    if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
-        st.warning(f"{symbol} 收盤價非有效數值")
-        continue
-
-    # 計算技術指標
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
     data['%K'], data['%D'] = calculate_kd(data)
 
-    # 取最新技術指標值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -122,23 +107,20 @@ for name, symbol in stock_list.items():
     latest_k = data['%K'].iloc[-1]
     latest_d = data['%D'].iloc[-1]
 
-    # 顯示收盤價與價差
     st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-    # 顯示技術指標值
     st.write(f"RSI: {latest_rsi:.2f}")
     st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
     st.write(f"CCI: {latest_cci:.2f}")
     st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
 
-    # 顯示技術指標圖表
-    st.line_chart(data[['Close']].rename(columns={'Close': '收盤價'}))
+    # 確保索引是時間序列，並 dropna() 清理缺失值
+    st.line_chart(data[['Close']].dropna())
     st.line_chart(data[['RSI']].dropna())
     st.line_chart(data[['MACD', 'Signal']].dropna())
     st.line_chart(data[['CCI']].dropna())
     st.line_chart(data[['%K', '%D']].dropna())
 
-    # 綜合訊號判斷
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
