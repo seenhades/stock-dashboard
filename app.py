@@ -11,6 +11,7 @@ stock_list = {
     "NTT (日股)": "9432.T",
     "1306 ETF (日股)": "1306.T",
     "國泰航空(港股)": "0293.HK",
+    "碧桂園(港股)": "2007.HK",
     "Shell (英股)": "SHEL.L",
     "Porsche SE (德股)": "PAH3.DE",
     "Infineon (德股)": "IFX.DE",
