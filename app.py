@@ -3,9 +3,7 @@ import yfinance as yf
 import datetime
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-st.set_page_config(layout="wide")
 st.title("股票技術指標與收盤價監控")
 
 stock_list = {
@@ -53,32 +51,37 @@ def calculate_kd(data, k_period=9, d_period=3):
     low_min = data['Low'].rolling(window=k_period).min()
     high_max = data['High'].rolling(window=k_period).max()
     rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
-    k = rsv.ewm(com=d_period-1, adjust=False).mean()
+    k = rsv.ewm(com=d_period-1, adjust=False).mean()  # 指數移動平均
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
 def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
+    # RSI訊號
     if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
 
+    # MACD訊號
     if macd > signal:
         signals.append("💰 MACD黃金交叉，買進訊號")
     else:
         signals.append("⚠️ MACD死亡交叉，賣出訊號")
 
+    # CCI訊號
     if cci < -100:
         signals.append("🧊 CCI過低，可能超賣，買進訊號")
     elif cci > 100:
         signals.append("🔥 CCI過高，可能過買，賣出訊號")
 
+    # KD訊號
     if k < 20 and d < 20 and k > d:
         signals.append("💰 KD低檔黃金交叉，買進訊號")
     elif k > 80 and d > 80 and k < d:
         signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
+    # 綜合評估（簡單版）
     buy_signals = sum(1 for s in signals if "買進" in s)
     sell_signals = sum(1 for s in signals if "賣出" in s)
     if buy_signals > sell_signals:
@@ -114,6 +117,7 @@ for name, symbol in stock_list.items():
     data['CCI'] = calculate_cci(data)
     data['%K'], data['%D'] = calculate_kd(data)
 
+    # 取最新技術指標值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -121,18 +125,8 @@ for name, symbol in stock_list.items():
     latest_k = data['%K'].iloc[-1]
     latest_d = data['%D'].iloc[-1]
 
+    # 顯示收盤價與價差
     st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-
-    # 顯示 PE/PB
-    try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.info
-        pe = info.get("trailingPE", None)
-        pb = info.get("priceToBook", None)
-        st.write(f"📊 本益比 (PE): {pe:.2f}" if pe else "📊 本益比 (PE): 無資料")
-        st.write(f"🏦 淨值比 (PB): {pb:.2f}" if pb else "🏦 淨值比 (PB): 無資料")
-    except:
-        st.write("⚠️ 無法取得 PE / PB")
 
     # 顯示技術指標
     st.write(f"RSI: {latest_rsi:.2f}")
@@ -140,13 +134,10 @@ for name, symbol in stock_list.items():
     st.write(f"CCI: {latest_cci:.2f}")
     st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
 
+    # 綜合訊號判斷
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
     st.success(overall)
-
-    # 圖表視覺化
-    st.line_chart(data['Close'].dropna(), height=200, use_container_width=True)
-    st.line_chart(data[['RSI', '%K', '%D']].dropna(), height=200, use_container_width=True)
 
     st.markdown("---")
