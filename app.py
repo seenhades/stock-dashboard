@@ -1,10 +1,10 @@
 import streamlit as st
 import yfinance as yf
 import datetime
+import numpy as np
 
 st.title("日本股票最新收盤價與前日價差")
 
-# 日本股票代碼（後綴 .T）
 stock_list = {
     "Panasonic": "6752.T",
     "NTT": "9432.T",
@@ -13,7 +13,7 @@ stock_list = {
 }
 
 end = datetime.datetime.now()
-start = end - datetime.timedelta(days=10)  # 多抓幾天避免假日影響
+start = end - datetime.timedelta(days=10)
 
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
@@ -30,6 +30,11 @@ for name, symbol in stock_list.items():
 
     latest = data.iloc[-1]
     prev = data.iloc[-2]
+
+    # 檢查是否有NaN或非數字
+    if np.isnan(latest['Close']) or np.isnan(prev['Close']):
+        st.warning(f"{symbol} 最新或前日收盤價為空值，無法顯示。")
+        continue
 
     st.metric("最新收盤價", f"{latest['Close']:.2f}", f"{latest['Close'] - prev['Close']:+.2f}")
     st.markdown("---")
