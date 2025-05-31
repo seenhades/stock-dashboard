@@ -16,7 +16,6 @@ stock_list = {
     "Panasonic (日股)": "6752.T",
     "NTT (日股)": "9432.T",
     "國泰航空(港股)": "0293.HK"
-    "中糧家佳康(港股)": "1610.HK"
 }
 
 end = datetime.datetime.now()
