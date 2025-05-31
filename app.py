@@ -27,13 +27,13 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 資料筆數不足，無法顯示前日價差")
         continue
 
-    latest = data.iloc[-1]
-    prev = data.iloc[-2]
+    latest_close = data["Close"].iloc[-1]
+    prev_close = data["Close"].iloc[-2]
 
-    # 檢查是否為數值
-    if np.isnan(latest['Close']) or np.isnan(prev['Close']):
-        st.warning(f"{symbol} 收盤價為空值，跳過顯示")
+    # 檢查是否為數值且非NaN
+    if not np.isfinite(latest_close) or not np.isfinite(prev_close):
+        st.warning(f"{symbol} 收盤價為空值或非數值，跳過顯示")
         continue
 
-    st.metric("最新收盤價", f"{latest['Close']:.2f}", f"{latest['Close'] - prev['Close']:+.2f}")
+    st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
     st.markdown("---")
