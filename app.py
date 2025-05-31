@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-st.title("多市場股票技術指標與收盤價監控")
+st.title("股票技術指標與收盤價監控")
 
 stock_list = {
     "Panasonic (日股)": "6752.T",
@@ -58,7 +58,7 @@ def calculate_kd(data, k_period=9, d_period=3):
 def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
     # RSI訊號
-    if rsi < 30:
+    if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
