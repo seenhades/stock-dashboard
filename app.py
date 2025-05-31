@@ -1,7 +1,6 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
 import datetime
 import traceback
 
@@ -11,7 +10,7 @@ stock_list = {
     "Organon": "OGN",
     "Infineon": "IFX.DE",
     "Shell": "SHEL.L",
-    "1306 ETF": "1306.TW",      # 改成 1306.TW
+    "1306 ETF": "1306.TW",
     "Newmont": "NEM",
     "Panasonic": "6752.T",
     "NTT": "9432.T"
@@ -27,10 +26,10 @@ def fetch_data(symbol):
     try:
         data = yf.download(symbol, start=start, end=end, interval="1d", progress=False)
         if data.empty:
-            st.warning(f"{symbol} 抓取資料為空。")
+            st.warning(f"{symbol} 資料為空，請確認代碼或稍後再試。")
             return None
         if "Close" not in data.columns:
-            st.warning(f"{symbol} 抓取資料中無 'Close' 欄位。")
+            st.warning(f"{symbol} 無 Close 欄位資料。")
             return None
 
         data["SMA20"] = data["Close"].rolling(window=20).mean()
@@ -50,18 +49,19 @@ def fetch_data(symbol):
 
         return data
     except Exception:
-        st.error(f"下載 {symbol} 時發生錯誤：\n{traceback.format_exc()}")
+        st.error(f"下載 {symbol} 發生錯誤:\n{traceback.format_exc()}")
         return None
 
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
+
     data = fetch_data(symbol)
     if data is None:
-        st.warning(f"{symbol} 無法抓取資料，請確認代碼是否正確或稍後再試。")
+        st.warning(f"{symbol} 無法取得有效資料。")
         continue
 
     if len(data) < 2:
-        st.warning("資料不足，無法顯示技術指標。")
+        st.warning(f"{symbol} 資料不足，無法顯示指標。")
         continue
 
     latest = data.iloc[-1]
@@ -72,11 +72,10 @@ for name, symbol in stock_list.items():
     col2.metric("昨日收盤價", f"{prev['Close']:.2f}")
 
     signals = []
-    if "MACD" in data.columns and "Signal" in data.columns:
-        if data["MACD"].iloc[-1] > data["Signal"].iloc[-1] and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
-            signals.append("💰 買進訊號 (MACD 黃金交叉)")
-        elif data["MACD"].iloc[-1] < data["Signal"].iloc[-1] and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
-            signals.append("⚠️ 賣出訊號 (MACD 死亡交叉)")
+    if data["MACD"].iloc[-1] > data["Signal"].iloc[-1] and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
+        signals.append("💰 買進訊號 (MACD 黃金交叉)")
+    elif data["MACD"].iloc[-1] < data["Signal"].iloc[-1] and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
+        signals.append("⚠️ 賣出訊號 (MACD 死亡交叉)")
 
     rsi = data["RSI"].iloc[-1]
     if rsi > 70:
