@@ -5,7 +5,6 @@ import datetime
 
 st.set_page_config(page_title="股票技術分析看板", layout="wide")
 
-# 你的追蹤股票清單
 stocks = {
     "Organon": "OGN",
     "Infineon": "IFX.DE",
@@ -16,7 +15,6 @@ stocks = {
     "NTT": "9432.T"
 }
 
-# 下載資料函式
 @st.cache_data(ttl=300)  # 每 5 分鐘快取更新
 def load_data(ticker):
     end = datetime.datetime.now()
@@ -41,7 +39,6 @@ def load_data(ticker):
         st.error(f"{ticker} 資料取得失敗：{e}")
         return pd.DataFrame()
 
-# 主介面
 st.title("📊 股票技術分析看板")
 
 for name, ticker in stocks.items():
@@ -52,42 +49,63 @@ for name, ticker in stocks.items():
         st.warning("資料不足或下載失敗")
         continue
 
-    # 顯示目前價格與 RSI、MACD 指標
     current_price = data["Close"].iloc[-1]
     rsi = data["RSI"].iloc[-1]
     macd = data["MACD"].iloc[-1]
     signal = data["Signal"].iloc[-1]
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("目前股價", f"{current_price:.2f}")
-    col2.metric("RSI", f"{rsi:.2f}")
-    col3.metric("MACD", f"{macd:.2f} / Signal: {signal:.2f}")
 
-    # 技術指標過熱提醒
-    if rsi > 70:
-        st.warning("⚠️ RSI 過熱（>70）— 可能超買")
-    elif rsi < 30:
-        st.info("💡 RSI 超跌（<30）— 可能超賣")
+    try:
+        current_price = float(current_price)
+        col1.metric("目前股價", f"{current_price:.2f}")
+    except (ValueError, TypeError):
+        col1.metric("目前股價", "無法取得")
 
-    # 買賣訊號簡單判斷
-    if macd > signal and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
-        st.success("✅ 買進訊號：MACD 黃金交叉")
-    elif macd < signal and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
-        st.error("⚠️ 賣出訊號：MACD 死亡交叉")
+    try:
+        rsi = float(rsi)
+        col2.metric("RSI", f"{rsi:.2f}")
+    except (ValueError, TypeError):
+        col2.metric("RSI", "無法取得")
 
-    # 價格與均線圖表
+    try:
+        macd = float(macd)
+        signal = float(signal)
+        col3.metric("MACD", f"{macd:.2f} / Signal: {signal:.2f}")
+    except (ValueError, TypeError):
+        col3.metric("MACD", "無法取得")
+
+    if isinstance(rsi, float):
+        if rsi > 70:
+            st.warning("⚠️ RSI 過熱（>70）— 可能超買")
+        elif rsi < 30:
+            st.info("💡 RSI 超跌（<30）— 可能超賣")
+
+    # 買賣訊號簡單判斷，防呆判斷前一筆是否存在
+    if (
+        "MACD" in data.columns and
+        "Signal" in data.columns and
+        len(data) > 1 and
+        not data["MACD"].isna().all() and
+        not data["Signal"].isna().all()
+    ):
+        prev_macd = data["MACD"].iloc[-2]
+        prev_signal = data["Signal"].iloc[-2]
+        if macd > signal and prev_macd <= prev_signal:
+            st.success("✅ 買進訊號：MACD 黃金交叉")
+        elif macd < signal and prev_macd >= prev_signal:
+            st.error("⚠️ 賣出訊號：MACD 死亡交叉")
+
     if all(col in data.columns for col in ["Close", "SMA20"]) and len(data) >= 20:
         st.line_chart(data[["Close", "SMA20"]])
     else:
         st.warning("無法繪製 SMA20（資料不足）")
 
-    # RSI 圖表
     if "RSI" in data.columns and not data["RSI"].isna().all():
         st.line_chart(data[["RSI"]])
     else:
         st.warning("無法顯示 RSI（資料不足）")
 
-    # MACD 圖表
     if all(col in data.columns for col in ["MACD", "Signal"]) and not data["MACD"].isna().all():
         st.line_chart(data[["MACD", "Signal"]])
     else:
