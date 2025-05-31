@@ -17,30 +17,31 @@ stock_list = {
     "NTT": "9432.T"
 }
 
-# 時間範圍
+# 時間範圍：抓近90天日線資料
 end = datetime.datetime.now()
 start = end - datetime.timedelta(days=90)
 
 st.title("📈 股票技術分析儀表板")
 
-# 自動每 5 分鐘更新資料 (注意：yfinance 一天頻率不支援5m，故改為1d)
 @st.cache_data(ttl=300)
 def fetch_data(symbol):
     data = yf.download(symbol, start=start, end=end, interval="1d")
     if data.empty:
         return None
-    # 處理 MultiIndex columns (如果有)
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns = ['_'.join(col).strip() for col in data.columns]
+    if "Close" not in data.columns:
+        st.warning(f"{symbol} 資料缺少 Close 欄位")
+        return None
 
-    # 計算技術指標
     data["SMA20"] = data["Close"].rolling(window=20).mean()
 
     delta = data["Close"].diff()
     gain = np.where(delta > 0, delta, 0)
     loss = np.where(delta < 0, -delta, 0)
+
+    # 使用 index 對齊資料
     avg_gain = pd.Series(gain, index=data.index).rolling(window=14).mean()
     avg_loss = pd.Series(loss, index=data.index).rolling(window=14).mean()
+
     rs = avg_gain / avg_loss
     data["RSI"] = 100 - (100 / (1 + rs))
 
@@ -58,20 +59,21 @@ for name, symbol in stock_list.items():
 
     if data is None or data.empty:
         st.warning(f"{symbol} 沒有資料，請稍後再試。")
+        st.markdown("---")
         continue
 
-    # 確保有至少兩天的資料
+    # 確保至少有兩筆資料可比對前一天收盤價
     if len(data) < 2:
-        st.warning(f"{symbol} 資料不足，無法顯示前一天收盤價。")
+        st.warning(f"{symbol} 資料筆數不足，無法顯示昨日比較。")
+        st.markdown("---")
         continue
 
     latest = data.iloc[-1]
     prev = data.iloc[-2]
 
-    # 顯示今日收盤價與前日收盤價差價
     col1, col2 = st.columns(2)
-    col1.metric("今日收盤價", f"{latest['Close']:.2f}", f"{(latest['Close'] - prev['Close']):+.2f}")
-    col2.metric("前日收盤價", f"{prev['Close']:.2f}")
+    col1.metric("今日收盤價", f"{latest['Close']:.2f}", f"{latest['Close'] - prev['Close']:+.2f}")
+    col2.metric("昨日收盤價", f"{prev['Close']:.2f}")
 
     # 買賣訊號判斷
     signals = []
@@ -93,7 +95,7 @@ for name, symbol in stock_list.items():
     else:
         st.write("尚無明確買賣訊號。")
 
-    # 畫圖表
+    # 技術指標圖表
     st.line_chart(data[["Close", "SMA20"]])
     st.line_chart(data[["MACD", "Signal"]])
     st.line_chart(data[["RSI"]])
