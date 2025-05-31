@@ -10,7 +10,7 @@ stock_list = {
     "Organon": "OGN",
     "Infineon": "IFX.DE",
     "Shell": "SHEL.L",
-    "1306 ETF": "1306.TW",
+    "1306 ETF": "1306.T",
     "Newmont": "NEM",
     "Panasonic": "6752.T",
     "NTT": "9432.T"
