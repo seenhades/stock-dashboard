@@ -3,13 +3,17 @@ import yfinance as yf
 import datetime
 import numpy as np
 
-st.title("美股與德股最新收盤價與前日價差")
+st.title("多市場股票最新收盤價與前日價差")
 
 stock_list = {
     "Organon (美股)": "OGN",
     "Newmont (美股)": "NEM",
     "Infineon (德股)": "IFX.DE",
     "Porsche SE (德股)": "PAH3.DE",
+    "Shell (英股)": "SHEL.L",
+    "1306 ETF (日股)": "1306.T",
+    "Panasonic (日股)": "6752.T",
+    "NTT (日股)": "9432.T",
 }
 
 end = datetime.datetime.now()
