@@ -1,23 +1,26 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import time
 
 st.set_page_config(page_title="股票技術指標看板", layout="wide")
 
 st.title("📈 股票技術指標看板")
 
-# 使用者輸入股票代碼
-tickers = st.multiselect("選擇股票代碼（例如：AAPL, TSLA, 2330.TW）", ["AAPL", "TSLA", "2330.TW"])
+# 股票清單
+tickers = st.multiselect(
+    "選擇股票代碼（例如：AAPL, TSLA, 2330.TW）",
+    ["AAPL", "TSLA", "2330.TW", "ORGN", "IFX.DE", "SHEL", "1306.TW", "NEM", "6752.T", "9432.T"]
+)
 
-# 設定資料抓取間隔（秒）
-interval = 300  # 5 分鐘
-
-@st.cache_data(ttl=interval)
+@st.cache_data(ttl=300)
 def get_data(ticker):
-    df = yf.download(ticker, period="1mo", interval="5m")
-    df.dropna(inplace=True)
-    return df
+    try:
+        df = yf.download(ticker, period="1mo", interval="5m")
+        df.dropna(inplace=True)
+        return df
+    except Exception as e:
+        st.error(f"{ticker} 資料抓取失敗：{e}")
+        return pd.DataFrame()
 
 def compute_indicators(df):
     df["SMA20"] = df["Close"].rolling(window=20).mean()
@@ -43,28 +46,21 @@ if tickers:
     for ticker in tickers:
         st.subheader(f"📊 {ticker} 技術指標分析")
         data = get_data(ticker)
+        
+        if data.empty:
+            st.warning(f"{ticker} 無可用資料")
+            continue
+
         data = compute_indicators(data)
-        
-        columns_to_show = []
 
-if "Close" in data.columns and "SMA20" in data.columns:
-    columns_to_show = ["Close", "SMA20"]
-    st.line_chart(data[columns_to_show])
-else:
-    st.warning(f"{ticker} 的 SMA20 或 Close 資料無法取得")
+        if "Close" in data.columns and "SMA20" in data.columns:
+            st.line_chart(data[["Close", "SMA20"]])
+        else:
+            st.warning(f"{ticker} 的 SMA20 或 Close 資料無法取得")
 
-if "RSI" in data.columns:
-    st.line_chart(data[["RSI"]])
-else:
-    st.warning(f"{ticker} 的 RSI 資料無法取得")
+        if "RSI" in data.columns:
+            st.line_chart(data[["RSI"]])
+        else:
+            st.warning(f"{ticker} 的 RSI 資料無法取得")
 
-if "MACD" in data.columns and "Signal" in data.columns:
-    st.line_chart(data[["MACD", "Signal"]])
-else:
-    st.warning(f"{ticker} 的 MACD 或 Signal 資料無法取得")
-
-        
-        st.dataframe(data.tail(10))
-        st.markdown("---")
-else:
-    st.info("請選擇至少一個股票代碼以查看分析。")
+        if "MACD" in data.columns and "Signal" in data.columns:
