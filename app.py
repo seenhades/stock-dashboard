@@ -44,10 +44,18 @@ def calculate_cci(data, period=20):
     cci = (typical_price - sma_tp) / (0.015 * mad)
     return cci
 
-def evaluate_signals(rsi, macd, signal, cci):
+def calculate_kd(data, k_period=9, d_period=3):
+    low_min = data['Low'].rolling(window=k_period).min()
+    high_max = data['High'].rolling(window=k_period).max()
+    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
+    k = rsv.ewm(com=d_period-1, adjust=False).mean()  # 指數移動平均
+    d = k.ewm(com=d_period-1, adjust=False).mean()
+    return k, d
+
+def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
     # RSI訊號
-    if rsi < 20:
+    if rsi < 30:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
@@ -63,6 +71,12 @@ def evaluate_signals(rsi, macd, signal, cci):
         signals.append("🧊 CCI過低，可能超賣，買進訊號")
     elif cci > 100:
         signals.append("🔥 CCI過高，可能過買，賣出訊號")
+
+    # KD訊號
+    if k < 20 and d < 20 and k > d:
+        signals.append("💰 KD低檔黃金交叉，買進訊號")
+    elif k > 80 and d > 80 and k < d:
+        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
     # 綜合評估（簡單版）
     buy_signals = sum(1 for s in signals if "買進" in s)
@@ -98,12 +112,15 @@ for name, symbol in stock_list.items():
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
+    data['%K'], data['%D'] = calculate_kd(data)
 
     # 取最新技術指標值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
     latest_cci = data['CCI'].iloc[-1]
+    latest_k = data['%K'].iloc[-1]
+    latest_d = data['%D'].iloc[-1]
 
     # 顯示收盤價與價差
     st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
@@ -112,9 +129,10 @@ for name, symbol in stock_list.items():
     st.write(f"RSI: {latest_rsi:.2f}")
     st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
     st.write(f"CCI: {latest_cci:.2f}")
+    st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
 
     # 綜合訊號判斷
-    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci)
+    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
     st.success(overall)
