@@ -21,7 +21,7 @@ stock_list = {
 }
 
 end = datetime.datetime.now()
-start = end - datetime.timedelta(days=90)  # 取90天資料計算技術指標
+start = end - datetime.timedelta(days=90)
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
@@ -41,10 +41,10 @@ def calculate_macd(series, span_short=12, span_long=26, signal_span=9):
     return macd, signal
 
 def calculate_cci(data, period=20):
-    typical_price = (data['High'] + data['Low'] + data['Close']) / 3
-    sma_tp = typical_price.rolling(window=period).mean()
-    mad = typical_price.rolling(window=period).apply(lambda x: np.fabs(x - x.mean()).mean())
-    cci = (typical_price - sma_tp) / (0.015 * mad)
+    tp = (data['High'] + data['Low'] + data['Close']) / 3
+    sma = tp.rolling(period).mean()
+    mad = tp.rolling(period).apply(lambda x: np.fabs(x - x.mean()).mean())
+    cci = (tp - sma) / (0.015 * mad)
     return cci
 
 def calculate_kd(data, k_period=9, d_period=3):
@@ -103,18 +103,16 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 收盤價非有效數值")
         continue
 
-    # 計算技術指標
+    # 計算指標
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
     data['%K'], data['%D'] = calculate_kd(data)
-    
-    # 移動平均線
     data['5MA'] = data['Close'].rolling(window=5).mean()
     data['10MA'] = data['Close'].rolling(window=10).mean()
     data['20MA'] = data['Close'].rolling(window=20).mean()
 
-    # 最新技術指標值
+    # 取得最新值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -125,24 +123,18 @@ for name, symbol in stock_list.items():
     latest_10ma = data['10MA'].iloc[-1]
     latest_20ma = data['20MA'].iloc[-1]
 
-    # 顯示價格與均線
-    st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-    st.write(f"5日均線: {latest_5ma:.2f}, 10日: {latest_10ma:.2f}, 20日: {latest_20ma:.2f}")
-    
-    # 顯示技術指標
-    st.write(f"RSI: {latest_rsi:.2f}")
-    st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
-    st.write(f"CCI: {latest_cci:.2f}")
-    st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
+    # 顯示指標數值
+    st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+    st.write(f"📊 5MA: {latest_5ma:.2f}, 10MA: {latest_10ma:.2f}, 20MA: {latest_20ma:.2f}")
+    st.write(f"📊 RSI: {latest_rsi:.2f}")
+    st.write(f"📊 MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
+    st.write(f"📊 CCI: {latest_cci:.2f}")
+    st.write(f"📊 KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
 
-    # 綜合判斷
+    # 綜合評估
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
     st.success(overall)
-
-    # 均線圖表（可選）
-    with st.expander("📈 收盤價與均線圖"):
-        st.line_chart(data[['Close', '5MA', '10MA', '20MA']].dropna())
 
     st.markdown("---")
