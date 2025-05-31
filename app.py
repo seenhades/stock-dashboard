@@ -17,20 +17,17 @@ stock_list = {
     "NTT": "9432.T"
 }
 
-# 時間範圍
-end = datetime.datetime.now()
-start = end - datetime.timedelta(days=90)
-
 st.title("📈 股票技術分析儀表板")
 
-# 自動每 5 分鐘更新資料
 @st.cache_data(ttl=300)
 def fetch_data(symbol):
-    data = yf.download(symbol, start=start, end=end, interval="5m")
+    # 使用 period 參數抓 90 天的日線資料
+    data = yf.download(symbol, period="90d", interval="1d")
     if data.empty:
         return None
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = ['_'.join(col).strip() for col in data.columns]
+    # 技術指標計算
     data["SMA20"] = data["Close"].rolling(window=20).mean()
     delta = data["Close"].diff()
     gain = np.where(delta > 0, delta, 0)
@@ -45,33 +42,33 @@ def fetch_data(symbol):
     data["Signal"] = data["MACD"].ewm(span=9, adjust=False).mean()
     return data
 
-# 顯示每支股票的資訊
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
-
     data = fetch_data(symbol)
 
     if data is None or data.empty:
         st.warning(f"{symbol} 沒有資料，請稍後再試。")
         continue
 
-    # 顯示即時股價
-    current_price = data["Close"].iloc[-1]
-    previous_price = data["Close"].iloc[-2]
-    delta = current_price - previous_price
+    # 取最後兩筆資料，今天和前一天
+    latest = data.iloc[-1]
+    prev = data.iloc[-2]
+
+    # 顯示今日收盤價與昨日收盤價
     col1, col2 = st.columns(2)
-    col1.metric("目前股價", f"{current_price:.2f}", f"{delta:+.2f}")
+    col1.metric("今日收盤價", f"{latest['Close']:.2f}", f"{latest['Close'] - prev['Close']:+.2f}")
+    col2.metric("昨日收盤價", f"{prev['Close']:.2f}")
 
     # 買賣訊號判斷
     signals = []
     if "MACD" in data.columns and "Signal" in data.columns:
-        if data["MACD"].iloc[-1] > data["Signal"].iloc[-1] and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
+        if latest["MACD"] > latest["Signal"] and prev["MACD"] <= prev["Signal"]:
             signals.append("💰 買進訊號 (MACD 黃金交叉)")
-        elif data["MACD"].iloc[-1] < data["Signal"].iloc[-1] and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
+        elif latest["MACD"] < latest["Signal"] and prev["MACD"] >= prev["Signal"]:
             signals.append("⚠️ 賣出訊號 (MACD 死亡交叉)")
 
     # RSI 過熱提示
-    rsi = data["RSI"].iloc[-1]
+    rsi = latest["RSI"]
     if rsi > 70:
         signals.append("🔥 RSI 過熱 (>70)，可能過買")
     elif rsi < 30:
