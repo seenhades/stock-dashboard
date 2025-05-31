@@ -55,6 +55,13 @@ def calculate_kd(data, k_period=9, d_period=3):
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
+def calculate_bollinger_bands(series, window=20, num_std=2):
+    sma = series.rolling(window=window).mean()
+    std = series.rolling(window=window).std()
+    upper = sma + (std * num_std)
+    lower = sma - (std * num_std)
+    return sma, upper, lower
+
 def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
     if rsi < 20:
@@ -103,7 +110,6 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 收盤價非有效數值")
         continue
 
-    # 計算指標
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
@@ -111,8 +117,8 @@ for name, symbol in stock_list.items():
     data['5MA'] = data['Close'].rolling(window=5).mean()
     data['10MA'] = data['Close'].rolling(window=10).mean()
     data['20MA'] = data['Close'].rolling(window=20).mean()
+    data['BB_MID'], data['BB_UPPER'], data['BB_LOWER'] = calculate_bollinger_bands(data['Close'])
 
-    # 取得最新值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -122,16 +128,23 @@ for name, symbol in stock_list.items():
     latest_5ma = data['5MA'].iloc[-1]
     latest_10ma = data['10MA'].iloc[-1]
     latest_20ma = data['20MA'].iloc[-1]
+    latest_bb_mid = data['BB_MID'].iloc[-1]
+    latest_bb_upper = data['BB_UPPER'].iloc[-1]
+    latest_bb_lower = data['BB_LOWER'].iloc[-1]
 
-    # 顯示指標數值
-    st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-    st.write(f"📊 5MA: {latest_5ma:.2f}, 10MA: {latest_10ma:.2f}, 20MA: {latest_20ma:.2f}")
-    st.write(f"📊 RSI: {latest_rsi:.2f}")
-    st.write(f"📊 MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
-    st.write(f"📊 CCI: {latest_cci:.2f}")
-    st.write(f"📊 KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
+    st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+    st.write(f"5日均線: {latest_5ma:.2f}, 10日: {latest_10ma:.2f}, 20日: {latest_20ma:.2f}")
+    st.write(f"RSI: {latest_rsi:.2f}")
+    st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
+    st.write(f"CCI: {latest_cci:.2f}")
+    st.write(f"KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
+    st.write(f"布林通道 ➤ 中軌: {latest_bb_mid:.2f}, 上軌: {latest_bb_upper:.2f}, 下軌: {latest_bb_lower:.2f}")
 
-    # 綜合評估
+    if latest_close < latest_bb_lower:
+        st.info("📉 股價跌破布林下軌，可能超賣")
+    elif latest_close > latest_bb_upper:
+        st.info("📈 股價突破布林上軌，可能過熱")
+
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
