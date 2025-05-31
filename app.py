@@ -6,9 +6,8 @@ import numpy as np
 st.title("美股最新收盤價與前日價差")
 
 stock_list = {
-    "Apple": "AAPL",
-    "Tesla": "TSLA",
-    "Microsoft": "MSFT",
+    "Organon": "OGN",
+    "Newmont": "NEM",
 }
 
 end = datetime.datetime.now()
