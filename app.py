@@ -47,7 +47,7 @@ def calculate_cci(data, period=20):
 def evaluate_signals(rsi, macd, signal, cci):
     signals = []
     # RSI訊號
-    if rsi < 30:
+    if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
