@@ -1,104 +1,96 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import datetime
 
-st.set_page_config(page_title="股票技術指標看板", layout="wide")
+st.set_page_config(page_title="股票技術分析看板", layout="wide")
 
-st.title("📈 股票技術指標看板")
+# 你的追蹤股票清單
+stocks = {
+    "Organon": "OGN",
+    "Infineon": "IFX.DE",
+    "Shell": "SHEL",
+    "1306 ETF": "1306.TW",
+    "Newmont": "NEM",
+    "Panasonic": "6752.T",
+    "NTT": "9432.T"
+}
 
-# 股票清單
-tickers = st.multiselect(
-    "選擇股票代碼（例如：AAPL, TSLA, 2330.TW）",
-    ["AAPL", "TSLA", "2330.TW", "ORGN", "IFX.DE", "SHEL", "1306.TW", "NEM", "6752.T", "9432.T"]
-)
-
-@st.cache_data(ttl=300)
-def get_data(ticker):
+# 下載資料函式
+@st.cache_data(ttl=300)  # 每 5 分鐘快取更新
+def load_data(ticker):
+    end = datetime.datetime.now()
+    start = end - datetime.timedelta(days=60)
     try:
-        df = yf.download(ticker, period="1mo", interval="5m")
-        df.dropna(inplace=True)
+        df = yf.download(ticker, start=start, end=end, interval="5m", progress=False)
+        df = df.dropna()
+        df["SMA20"] = df["Close"].rolling(window=20).mean()
+        delta = df["Close"].diff()
+        gain = delta.where(delta > 0, 0)
+        loss = -delta.where(delta < 0, 0)
+        avg_gain = gain.rolling(14).mean()
+        avg_loss = loss.rolling(14).mean()
+        rs = avg_gain / avg_loss
+        df["RSI"] = 100 - (100 / (1 + rs))
+        ema12 = df["Close"].ewm(span=12, adjust=False).mean()
+        ema26 = df["Close"].ewm(span=26, adjust=False).mean()
+        df["MACD"] = ema12 - ema26
+        df["Signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
         return df
     except Exception as e:
-        st.error(f"{ticker} 資料抓取失敗：{e}")
+        st.error(f"{ticker} 資料取得失敗：{e}")
         return pd.DataFrame()
 
-def compute_indicators(df):
-    df["SMA20"] = df["Close"].rolling(window=20).mean()
-    df["RSI"] = compute_rsi(df["Close"])
-    df["MACD"], df["Signal"] = compute_macd(df["Close"])
-    return df
+# 主介面
+st.title("📊 股票技術分析看板")
 
-def compute_rsi(series, period=14):
-    delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
+for name, ticker in stocks.items():
+    st.subheader(f"{name} ({ticker})")
+    data = load_data(ticker)
 
-def compute_macd(series, fast=12, slow=26, signal=9):
-    exp1 = series.ewm(span=fast, adjust=False).mean()
-    exp2 = series.ewm(span=slow, adjust=False).mean()
-    macd = exp1 - exp2
-    signal_line = macd.ewm(span=signal, adjust=False).mean()
-    return macd, signal_line
+    if data.empty:
+        st.warning("資料不足或下載失敗")
+        continue
 
-def detect_signals(df):
-    signal = ""
-    if len(df) < 2:
-        return "📉 資料不足無法判斷"
+    # 顯示目前價格與 RSI、MACD 指標
+    current_price = data["Close"].iloc[-1]
+    rsi = data["RSI"].iloc[-1]
+    macd = data["MACD"].iloc[-1]
+    signal = data["Signal"].iloc[-1]
 
-    rsi_now = df["RSI"].iloc[-1]
-    macd_now = df["MACD"].iloc[-1]
-    signal_now = df["Signal"].iloc[-1]
-    macd_prev = df["MACD"].iloc[-2]
-    signal_prev = df["Signal"].iloc[-2]
+    col1, col2, col3 = st.columns(3)
+    col1.metric("目前股價", f"{current_price:.2f}")
+    col2.metric("RSI", f"{rsi:.2f}")
+    col3.metric("MACD", f"{macd:.2f} / Signal: {signal:.2f}")
 
-    if rsi_now < 30 and macd_prev < signal_prev and macd_now > signal_now:
-        signal = "🟢 買進訊號（RSI 超賣 + MACD 黃金交叉）"
-    elif rsi_now > 70 and macd_prev > signal_prev and macd_now < signal_now:
-        signal = "🔴 賣出訊號（RSI 超買 + MACD 死亡交叉）"
-    elif rsi_now > 70:
-        signal = "⚠️ RSI 過熱，可能超買"
-    elif rsi_now < 30:
-        signal = "⚠️ RSI 過低，可能超賣"
+    # 技術指標過熱提醒
+    if rsi > 70:
+        st.warning("⚠️ RSI 過熱（>70）— 可能超買")
+    elif rsi < 30:
+        st.info("💡 RSI 超跌（<30）— 可能超賣")
+
+    # 買賣訊號簡單判斷
+    if macd > signal and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
+        st.success("✅ 買進訊號：MACD 黃金交叉")
+    elif macd < signal and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
+        st.error("⚠️ 賣出訊號：MACD 死亡交叉")
+
+    # 價格與均線圖表
+    if all(col in data.columns for col in ["Close", "SMA20"]) and len(data) >= 20:
+        st.line_chart(data[["Close", "SMA20"]])
     else:
-        signal = "✅ 無明顯買賣訊號"
+        st.warning("無法繪製 SMA20（資料不足）")
 
-    return signal
+    # RSI 圖表
+    if "RSI" in data.columns and not data["RSI"].isna().all():
+        st.line_chart(data[["RSI"]])
+    else:
+        st.warning("無法顯示 RSI（資料不足）")
 
-if tickers:
-    for ticker in tickers:
-        st.subheader(f"📊 {ticker} 技術指標分析")
-        data = get_data(ticker)
-        
-        if data.empty:
-            st.warning(f"{ticker} 無可用資料")
-            continue
+    # MACD 圖表
+    if all(col in data.columns for col in ["MACD", "Signal"]) and not data["MACD"].isna().all():
+        st.line_chart(data[["MACD", "Signal"]])
+    else:
+        st.warning("無法顯示 MACD（資料不足）")
 
-        data = compute_indicators(data)
-
-        # 顯示技術圖表
-        if "Close" in data.columns and "SMA20" in data.columns:
-            st.line_chart(data[["Close", "SMA20"]])
-        else:
-            st.warning(f"{ticker} 的 SMA20 或 Close 資料無法取得")
-
-        if "RSI" in data.columns:
-            st.line_chart(data[["RSI"]])
-        else:
-            st.warning(f"{ticker} 的 RSI 資料無法取得")
-
-        if "MACD" in data.columns and "Signal" in data.columns:
-            st.line_chart(data[["MACD", "Signal"]])
-        else:
-            st.warning(f"{ticker} 的 MACD 或 Signal 資料無法取得")
-
-        # 顯示訊號
-        if all(x in data.columns for x in ["RSI", "MACD", "Signal"]):
-            result = detect_signals(data)
-            st.success(result if "🟢" in result else result) if "🟢" in result else st.warning(result)
-
-        st.dataframe(data.tail(10))
-        st.markdown("---")
-else:
-    st.info("請選擇至少一個股票代碼以查看分析。")
+    st.divider()
