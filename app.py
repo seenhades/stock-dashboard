@@ -45,9 +45,24 @@ if tickers:
         data = get_data(ticker)
         data = compute_indicators(data)
         
-        st.line_chart(data[["Close", "SMA20"]])
-        st.line_chart(data[["RSI"]])
-        st.line_chart(data[["MACD", "Signal"]])
+        columns_to_show = []
+
+if "Close" in data.columns and "SMA20" in data.columns:
+    columns_to_show = ["Close", "SMA20"]
+    st.line_chart(data[columns_to_show])
+else:
+    st.warning(f"{ticker} 的 SMA20 或 Close 資料無法取得")
+
+if "RSI" in data.columns:
+    st.line_chart(data[["RSI"]])
+else:
+    st.warning(f"{ticker} 的 RSI 資料無法取得")
+
+if "MACD" in data.columns and "Signal" in data.columns:
+    st.line_chart(data[["MACD", "Signal"]])
+else:
+    st.warning(f"{ticker} 的 MACD 或 Signal 資料無法取得")
+
         
         st.dataframe(data.tail(10))
         st.markdown("---")
