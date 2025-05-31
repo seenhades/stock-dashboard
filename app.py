@@ -21,27 +21,28 @@ st.title("📈 股票技術分析儀表板")
 @st.cache_data(ttl=300)
 def fetch_data(symbol):
     data = yf.download(symbol, period="90d", interval="1d")
-    if data.empty:
-        return None
-    # 確認有 Close 欄位
-    if "Close" not in data.columns:
+    if data.empty or "Close" not in data.columns:
         return None
 
-    # 計算技術指標
     data["SMA20"] = data["Close"].rolling(window=20).mean()
+
     delta = data["Close"].diff()
-    gain = np.where(delta > 0, delta, 0)
-    loss = np.where(delta < 0, -delta, 0)
-    avg_gain = pd.Series(gain, index=data.index).rolling(window=14).mean()
-    avg_loss = pd.Series(loss, index=data.index).rolling(window=14).mean()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+
+    avg_gain = gain.rolling(window=14).mean()
+    avg_loss = loss.rolling(window=14).mean()
+
     rs = avg_gain / avg_loss
     data["RSI"] = 100 - (100 / (1 + rs))
+
     exp1 = data["Close"].ewm(span=12, adjust=False).mean()
     exp2 = data["Close"].ewm(span=26, adjust=False).mean()
     data["MACD"] = exp1 - exp2
     data["Signal"] = data["MACD"].ewm(span=9, adjust=False).mean()
 
     return data
+
 
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
