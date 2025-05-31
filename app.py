@@ -1,142 +1,140 @@
 import streamlit as st
 import yfinance as yf
-import pandas as pd
-import numpy as np
 import datetime
-import math
+import numpy as np
+import pandas as pd
 
-st.set_page_config(page_title="股票技術分析看板", layout="wide")
+st.title("多市場股票技術指標與收盤價監控")
 
 stock_list = {
-    "Organon": "OGN",
-    "Newmont": "NEM",
-    "Infineon": "IFX.DE",
-    "Porsche SE": "PAH3.DE",
-    "Shell": "SHEL.L",
-    "1306 ETF": "1306.T",
-    "Panasonic": "6752.T",
-    "NTT": "9432.T",
-    "國泰航空": "293.HK",
-    "中糧家佳康": "06106.HK",
-    "碧桂園": "2007.HK"
+    "Organon (美股)": "OGN",
+    "Newmont (美股)": "NEM",
+    "Infineon (德股)": "IFX.DE",
+    "Porsche SE (德股)": "PAH3.DE",
+    "Shell (英股)": "SHEL.L",
+    "1306 ETF (日股)": "1306.T",
+    "Panasonic (日股)": "6752.T",
+    "NTT (日股)": "9432.T",
 }
 
 end = datetime.datetime.now()
-start = end - datetime.timedelta(days=90)
+start = end - datetime.timedelta(days=90)  # 取90天資料計算技術指標
 
-st.title("📈 股票技術分析儀表板")
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
-def is_valid_number(x):
-    return isinstance(x, (float, int)) and not pd.isna(x) and np.isfinite(x)
+def calculate_macd(series, span_short=12, span_long=26, signal_span=9):
+    ema_short = series.ewm(span=span_short, adjust=False).mean()
+    ema_long = series.ewm(span=span_long, adjust=False).mean()
+    macd = ema_short - ema_long
+    signal = macd.ewm(span=signal_span, adjust=False).mean()
+    return macd, signal
 
-@st.cache_data(ttl=300)
-def fetch_data(symbol):
-    try:
-        data = yf.download(symbol, start=start, end=end, interval="1d")
-        if data.empty or "Close" not in data.columns:
-            return None
+def calculate_cci(data, period=20):
+    typical_price = (data['High'] + data['Low'] + data['Close']) / 3
+    sma_tp = typical_price.rolling(window=period).mean()
+    mad = typical_price.rolling(window=period).apply(lambda x: np.fabs(x - x.mean()).mean())
+    cci = (typical_price - sma_tp) / (0.015 * mad)
+    return cci
 
-        # 計算技術指標：SMA20
-        data["SMA20"] = data["Close"].rolling(window=20).mean()
+def calculate_kd(data, k_period=9, d_period=3):
+    low_min = data['Low'].rolling(window=k_period).min()
+    high_max = data['High'].rolling(window=k_period).max()
+    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
+    k = rsv.ewm(com=d_period-1, adjust=False).mean()  # 指數移動平均
+    d = k.ewm(com=d_period-1, adjust=False).mean()
+    return k, d
 
-        # RSI
-        delta = data["Close"].diff()
-        gain = delta.where(delta > 0, 0)
-        loss = -delta.where(delta < 0, 0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        rs = avg_gain / avg_loss
-        data["RSI"] = 100 - (100 / (1 + rs))
+def evaluate_signals(rsi, macd, signal, cci, k, d):
+    signals = []
+    # RSI訊號
+    if rsi < 30:
+        signals.append("🧊 RSI過冷，可能超賣，買進訊號")
+    elif rsi > 70:
+        signals.append("🔥 RSI過熱，可能過買，賣出訊號")
 
-        # MACD & Signal
-        exp1 = data["Close"].ewm(span=12, adjust=False).mean()
-        exp2 = data["Close"].ewm(span=26, adjust=False).mean()
-        data["MACD"] = exp1 - exp2
-        data["Signal"] = data["MACD"].ewm(span=9, adjust=False).mean()
+    # MACD訊號
+    if macd > signal:
+        signals.append("💰 MACD黃金交叉，買進訊號")
+    else:
+        signals.append("⚠️ MACD死亡交叉，賣出訊號")
 
-        # CCI
-        typical_price = (data["High"] + data["Low"] + data["Close"]) / 3
-        ma = typical_price.rolling(window=20).mean()
-        md = typical_price.rolling(window=20).apply(lambda x: np.mean(np.abs(x - x.mean())))
-        data["CCI"] = (typical_price - ma) / (0.015 * md)
+    # CCI訊號
+    if cci < -100:
+        signals.append("🧊 CCI過低，可能超賣，買進訊號")
+    elif cci > 100:
+        signals.append("🔥 CCI過高，可能過買，賣出訊號")
 
-        # KD 指標
-        low_min = data["Low"].rolling(window=14).min()
-        high_max = data["High"].rolling(window=14).max()
-        data["%K"] = 100 * (data["Close"] - low_min) / (high_max - low_min)
-        data["%D"] = data["%K"].rolling(window=3).mean()
+    # KD訊號
+    if k < 20 and d < 20 and k > d:
+        signals.append("💰 KD低檔黃金交叉，買進訊號")
+    elif k > 80 and d > 80 and k < d:
+        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
-        return data
-    except Exception as e:
-        return None
+    # 綜合評估（簡單版）
+    buy_signals = sum(1 for s in signals if "買進" in s)
+    sell_signals = sum(1 for s in signals if "賣出" in s)
+    if buy_signals > sell_signals:
+        overall = "🔵 綜合評估：買進"
+    elif sell_signals > buy_signals:
+        overall = "🔴 綜合評估：賣出"
+    else:
+        overall = "🟠 綜合評估：持有"
+
+    return signals, overall
 
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
-    data = fetch_data(symbol)
-
-    if data is None:
-        st.warning(f"{symbol} 無法取得資料，請確認代碼或稍後再試。")
-        st.markdown("---")
+    data = yf.download(symbol, start=start, end=end, interval="1d")
+    if data.empty or len(data) < 30:
+        st.warning(f"{symbol} 資料不足或無法取得")
         continue
 
-    if len(data) < 2:
-        st.warning("資料不足，無法顯示技術指標。")
-        st.markdown("---")
+    try:
+        latest_close = data["Close"].iloc[-1].item()
+        prev_close = data["Close"].iloc[-2].item()
+    except Exception as e:
+        st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
         continue
 
-    latest = data.iloc[-1]
-    prev = data.iloc[-2]
-
-    latest_close = latest["Close"]
-    prev_close = prev["Close"]
-
-    if not is_valid_number(latest_close) or not is_valid_number(prev_close):
-        st.warning("收盤價資料不完整，跳過該股票")
-        st.markdown("---")
+    if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
+        st.warning(f"{symbol} 收盤價非有效數值")
         continue
 
+    # 計算技術指標
+    data['RSI'] = calculate_rsi(data['Close'])
+    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+    data['CCI'] = calculate_cci(data)
+    data['%K'], data['%D'] = calculate_kd(data)
+
+    # 取最新技術指標值
+    latest_rsi = data['RSI'].iloc[-1]
+    latest_macd = data['MACD'].iloc[-1]
+    latest_signal = data['Signal'].iloc[-1]
+    latest_cci = data['CCI'].iloc[-1]
+    latest_k = data['%K'].iloc[-1]
+    latest_d = data['%D'].iloc[-1]
+
+    # 顯示收盤價與價差
     st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-    # 買賣訊號判斷
-    signals = []
-    if data["MACD"].iloc[-1] > data["Signal"].iloc[-1] and data["MACD"].iloc[-2] <= data["Signal"].iloc[-2]:
-        signals.append("💰 買進訊號 (MACD 黃金交叉)")
-    elif data["MACD"].iloc[-1] < data["Signal"].iloc[-1] and data["MACD"].iloc[-2] >= data["Signal"].iloc[-2]:
-        signals.append("⚠️ 賣出訊號 (MACD 死亡交叉)")
+    # 顯示技術指標
+    st.write(f"RSI: {latest_rsi:.2f}")
+    st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
+    st.write(f"CCI: {latest_cci:.2f}")
+    st.write(f"%K: {latest_k:.2f}, %D: {latest_d:.2f}")
 
-    rsi = latest["RSI"]
-    if is_valid_number(rsi):
-        if rsi > 70:
-            signals.append("🔥 RSI 過熱 (>70)，可能過買")
-        elif rsi < 30:
-            signals.append("🧊 RSI 過冷 (<30)，可能超賣")
-
-    cci = latest["CCI"]
-    if is_valid_number(cci):
-        if cci > 100:
-            signals.append("🔥 CCI 過熱 (>100)")
-        elif cci < -100:
-            signals.append("🧊 CCI 過冷 (<-100)")
-
-    k = latest["%K"]
-    d = latest["%D"]
-    if is_valid_number(k) and is_valid_number(d):
-        if k > d and data["%K"].iloc[-2] <= data["%D"].iloc[-2]:
-            signals.append("💰 KD黃金交叉買進訊號")
-        elif k < d and data["%K"].iloc[-2] >= data["%D"].iloc[-2]:
-            signals.append("⚠️ KD死亡交叉賣出訊號")
-
-    if signals:
-        for s in signals:
-            st.info(s)
-    else:
-        st.write("尚無明確買賣訊號。")
-
-    # 視覺化技術指標圖表
-    st.line_chart(data[["Close", "SMA20"]])
-    st.line_chart(data[["MACD", "Signal"]])
-    st.line_chart(data[["RSI"]])
-    st.line_chart(data[["CCI"]])
-    st.line_chart(data[["%K", "%D"]])
+    # 綜合訊號判斷
+    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
+    for s in signals:
+        st.info(s)
+    st.success(overall)
 
     st.markdown("---")
