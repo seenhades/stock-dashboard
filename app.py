@@ -135,28 +135,34 @@ for name, symbol in stock_list.items():
 
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-    st.markdown("### 📈 均線（MA）")
-    st.markdown(f"<div style='font-size:18px'>5日均線: {latest_5ma:.2f}, 10日: {latest_10ma:.2f}, 20日: {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 📈 均線（MA）")
+        st.markdown(f"<div style='font-size:18px'>5日: <span style='color:#2E86C1'>{latest_5ma:.2f}</span>, 10日: <span style='color:#28B463'>{latest_10ma:.2f}</span>, 20日: <span style='color:#AF7AC5'>{latest_20ma:.2f}</span></div>", unsafe_allow_html=True)
 
-    st.markdown("### 💹 RSI 指標")
-    st.markdown(f"<div style='font-size:18px'>RSI: {latest_rsi:.2f}</div>", unsafe_allow_html=True)
+        st.markdown("### 💹 RSI 指標")
+        color_rsi = "#28B463" if latest_rsi < 30 else ("#C0392B" if latest_rsi > 70 else "#555")
+        st.markdown(f"<div style='font-size:18px'>RSI: <span style='color:{color_rsi}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
 
-    st.markdown("### 📉 MACD 指標")
-    st.markdown(f"<div style='font-size:18px'>MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}</div>", unsafe_allow_html=True)
+        st.markdown("### 📊 CCI 指標")
+        color_cci = "#28B463" if latest_cci < -100 else ("#C0392B" if latest_cci > 100 else "#555")
+        st.markdown(f"<div style='font-size:18px'>CCI: <span style='color:{color_cci}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
 
-    st.markdown("### 📊 CCI 指標")
-    st.markdown(f"<div style='font-size:18px'>CCI: {latest_cci:.2f}</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("### 📉 MACD 指標")
+        color_macd = "#28B463" if latest_macd > latest_signal else "#C0392B"
+        st.markdown(f"<div style='font-size:18px'>MACD: <span style='color:{color_macd}'>{latest_macd:.4f}</span>, Signal: {latest_signal:.4f}</div>", unsafe_allow_html=True)
 
-    st.markdown("### 🌀 KD 指標")
-    st.markdown(f"<div style='font-size:18px'>%K = {latest_k:.2f}, %D = {latest_d:.2f}</div>", unsafe_allow_html=True)
+        st.markdown("### 🌀 KD 指標")
+        st.markdown(f"<div style='font-size:18px'>%K = {latest_k:.2f}, %D = {latest_d:.2f}</div>", unsafe_allow_html=True)
 
-    st.markdown("### 📎 布林通道（Bollinger Bands）")
-    st.markdown(f"<div style='font-size:18px'>中軌: {latest_bb_mid:.2f}, 上軌: {latest_bb_upper:.2f}, 下軌: {latest_bb_lower:.2f}</div>", unsafe_allow_html=True)
+        st.markdown("### 📎 布林通道（BBands）")
+        st.markdown(f"<div style='font-size:18px'>中: {latest_bb_mid:.2f}, 上: {latest_bb_upper:.2f}, 下: {latest_bb_lower:.2f}</div>", unsafe_allow_html=True)
 
-    if latest_close < latest_bb_lower:
-        st.info("📉 股價跌破布林下軌，可能超賣")
-    elif latest_close > latest_bb_upper:
-        st.info("📈 股價突破布林上軌，可能過熱")
+        if latest_close < latest_bb_lower:
+            st.info("📉 股價跌破布林下軌，可能超賣")
+        elif latest_close > latest_bb_upper:
+            st.info("📈 股價突破布林上軌，可能過熱")
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
