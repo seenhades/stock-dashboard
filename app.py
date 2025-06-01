@@ -24,74 +24,17 @@ stock_list = {
 end = datetime.datetime.now()
 start = end - datetime.timedelta(days=90)
 
-def calculate_rsi(series, period=14):
-    delta = series.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+from technical_analysis import *  # 假設已有完整技術分析函數
 
-def calculate_macd(series, span_short=12, span_long=26, signal_span=9):
-    ema_short = series.ewm(span=span_short, adjust=False).mean()
-    ema_long = series.ewm(span=span_long, adjust=False).mean()
-    macd = ema_short - ema_long
-    signal = macd.ewm(span=signal_span, adjust=False).mean()
-    return macd, signal
-
-def calculate_cci(data, period=20):
-    tp = (data['High'] + data['Low'] + data['Close']) / 3
-    sma = tp.rolling(period).mean()
-    mad = tp.rolling(period).apply(lambda x: np.fabs(x - x.mean()).mean())
-    cci = (tp - sma) / (0.015 * mad)
-    return cci
-
-def calculate_kd(data, k_period=9, d_period=3):
-    low_min = data['Low'].rolling(window=k_period).min()
-    high_max = data['High'].rolling(window=k_period).max()
-    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
-    k = rsv.ewm(com=d_period-1, adjust=False).mean()
-    d = k.ewm(com=d_period-1, adjust=False).mean()
-    return k, d
-
-def calculate_bollinger_bands(series, window=20, num_std=2):
-    sma = series.rolling(window=window).mean()
-    std = series.rolling(window=window).std()
-    upper = sma + (std * num_std)
-    lower = sma - (std * num_std)
-    return sma, upper, lower
-
-def evaluate_signals(rsi, macd, signal, cci, k, d):
-    signals = []
-    if rsi < 20:
-        signals.append("🧊 RSI過冷，可能超賣，買進訊號")
-    elif rsi > 70:
-        signals.append("🔥 RSI過熱，可能過買，賣出訊號")
-    if macd > signal:
-        signals.append("💰 MACD黃金交叉，買進訊號")
+def evaluate_ma_signals(latest_close, ma5, ma10, ma20):
+    if latest_close > ma5 > ma10 > ma20:
+        return "📈 均線多頭排列（短期強勢）"
+    elif latest_close < ma5 < ma10 < ma20:
+        return "📉 均線空頭排列（短期弱勢）"
+    elif max(abs(ma5 - ma10), abs(ma10 - ma20), abs(ma5 - ma20)) < 0.5:
+        return "⚠️ 均線糾結（盤整或變盤前兆）"
     else:
-        signals.append("⚠️ MACD死亡交叉，賣出訊號")
-    if cci < -100:
-        signals.append("🧊 CCI過低，可能超賣，買進訊號")
-    elif cci > 100:
-        signals.append("🔥 CCI過高，可能過買，賣出訊號")
-    if k < 20 and d < 20 and k > d:
-        signals.append("💰 KD低檔黃金交叉，買進訊號")
-    elif k > 80 and d > 80 and k < d:
-        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
-
-    buy_signals = sum(1 for s in signals if "買進" in s)
-    sell_signals = sum(1 for s in signals if "賣出" in s)
-    if buy_signals > sell_signals:
-        overall = "🔵 綜合評估：買進"
-    elif sell_signals > buy_signals:
-        overall = "🔴 綜合評估：賣出"
-    else:
-        overall = "🟠 綜合評估：持有"
-
-    return signals, overall
+        return "➖ 均線無明顯趨勢排列"
 
 for name, symbol in stock_list.items():
     st.markdown(f"## {name} ({symbol})")
@@ -139,6 +82,8 @@ for name, symbol in stock_list.items():
     with col1:
         st.markdown("### 📈 均線（MA）")
         st.markdown(f"<div style='font-size:18px'>5日: <span style='color:#2E86C1'>{latest_5ma:.2f}</span>, 10日: <span style='color:#28B463'>{latest_10ma:.2f}</span>, 20日: <span style='color:#AF7AC5'>{latest_20ma:.2f}</span></div>", unsafe_allow_html=True)
+        ma_signal = evaluate_ma_signals(latest_close, latest_5ma, latest_10ma, latest_20ma)
+        st.info(ma_signal)
 
         st.markdown("### 💹 RSI 指標")
         color_rsi = "#28B463" if latest_rsi < 30 else ("#C0392B" if latest_rsi > 70 else "#555")
