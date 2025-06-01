@@ -4,7 +4,8 @@ import datetime
 import numpy as np
 import pandas as pd
 
-st.title("股票技術指標與收盤價監控")
+st.set_page_config(layout="wide")
+st.title("📊 股票技術指標與收盤價監控")
 
 stock_list = {
     "Panasonic (日股)": "6752.T",
@@ -93,7 +94,7 @@ def evaluate_signals(rsi, macd, signal, cci, k, d):
     return signals, overall
 
 for name, symbol in stock_list.items():
-    st.subheader(f"{name} ({symbol})")
+    st.markdown(f"## {name} ({symbol})")
     data = yf.download(symbol, start=start, end=end, interval="1d")
     if data.empty or len(data) < 30:
         st.warning(f"{symbol} 資料不足或無法取得")
@@ -132,13 +133,25 @@ for name, symbol in stock_list.items():
     latest_bb_upper = data['BB_UPPER'].iloc[-1]
     latest_bb_lower = data['BB_LOWER'].iloc[-1]
 
-    st.metric("最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-    st.write(f"5日均線: {latest_5ma:.2f}, 10日: {latest_10ma:.2f}, 20日: {latest_20ma:.2f}")
-    st.write(f"RSI: {latest_rsi:.2f}")
-    st.write(f"MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
-    st.write(f"CCI: {latest_cci:.2f}")
-    st.write(f"KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
-    st.write(f"布林通道 ➤ 中軌: {latest_bb_mid:.2f}, 上軌: {latest_bb_upper:.2f}, 下軌: {latest_bb_lower:.2f}")
+    st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+
+    st.markdown("### 📈 均線（MA）")
+    st.markdown(f"<div style='font-size:18px'>5日均線: {latest_5ma:.2f}, 10日: {latest_10ma:.2f}, 20日: {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+
+    st.markdown("### 💹 RSI 指標")
+    st.markdown(f"<div style='font-size:18px'>RSI: {latest_rsi:.2f}</div>", unsafe_allow_html=True)
+
+    st.markdown("### 📉 MACD 指標")
+    st.markdown(f"<div style='font-size:18px'>MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}</div>", unsafe_allow_html=True)
+
+    st.markdown("### 📊 CCI 指標")
+    st.markdown(f"<div style='font-size:18px'>CCI: {latest_cci:.2f}</div>", unsafe_allow_html=True)
+
+    st.markdown("### 🌀 KD 指標")
+    st.markdown(f"<div style='font-size:18px'>%K = {latest_k:.2f}, %D = {latest_d:.2f}</div>", unsafe_allow_html=True)
+
+    st.markdown("### 📎 布林通道（Bollinger Bands）")
+    st.markdown(f"<div style='font-size:18px'>中軌: {latest_bb_mid:.2f}, 上軌: {latest_bb_upper:.2f}, 下軌: {latest_bb_lower:.2f}</div>", unsafe_allow_html=True)
 
     if latest_close < latest_bb_lower:
         st.info("📉 股價跌破布林下軌，可能超賣")
