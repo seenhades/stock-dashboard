@@ -156,7 +156,6 @@ for name, symbol in stock_list.items():
     latest_boxhigh = data['BoxHigh'].iloc[-1]
     latest_boxlow = data['BoxLow'].iloc[-1]
 
-    # 檢查箱型是否為有效數值
     if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
         latest_boxhigh = latest_boxlow = None
 
@@ -167,7 +166,6 @@ for name, symbol in stock_list.items():
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>均線狀態：</b>{ma_status}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
 
         rsi_color = colorize(latest_rsi, [30, 70], ["green", "black", "red"])
@@ -194,6 +192,8 @@ for name, symbol in stock_list.items():
             st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
         else:
             st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div style='font-size: 18px;'><b>均線狀態：</b>{ma_status}</div>", unsafe_allow_html=True)
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
