@@ -19,7 +19,7 @@ stock_list = {
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
     "Newmont (美股)": "NEM",
-    "Barrick (美股)": "B", 
+    "Barrick Mining (美股)": "B", 
 }
 
 end = datetime.datetime.now()
