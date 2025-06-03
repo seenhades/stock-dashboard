@@ -4,16 +4,15 @@ import datetime
 import numpy as np
 import pandas as pd
 
-st.set_page_config(layout="wide")
-st.title("📈 股票技術與財報指標分析平台")
+st.title("股票技術指標與收盤價監控")
 
 stock_list = {
     "Panasonic (日股)": "6752.T",
     "NTT (日股)": "9432.T",
     "1306 ETF (日股)": "1306.T",
-    "國泰航空 (港股)": "0293.HK",
-    "碧桂園 (港股)": "2007.HK",
-    "中糧家佳康 (港股)": "1610.HK",
+    "國泰航空(港股)": "0293.HK",
+    "碧桂園(港股)": "2007.HK",
+    "中糧家佳康(港股)": "1610.HK",
     "Shell (英股)": "SHEL.L",
     "Porsche SE (德股)": "PAH3.DE",
     "Infineon (德股)": "IFX.DE",
@@ -83,6 +82,7 @@ def evaluate_signals(rsi, macd, signal, cci, k, d):
         overall = "🔴 綜合評估：賣出"
     else:
         overall = "🟠 綜合評估：持有"
+
     return signals, overall
 
 for name, symbol in stock_list.items():
@@ -92,24 +92,27 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 資料不足或無法取得")
         continue
 
-    # 技術指標
+    try:
+        latest_close = data["Close"].iloc[-1].item()
+        prev_close = data["Close"].iloc[-2].item()
+    except Exception as e:
+        st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
+        continue
+
+    if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
+        st.warning(f"{symbol} 收盤價非有效數值")
+        continue
+
+    # 計算指標
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
     data['%K'], data['%D'] = calculate_kd(data)
-
-    # 均線
     data['5MA'] = data['Close'].rolling(window=5).mean()
     data['10MA'] = data['Close'].rolling(window=10).mean()
     data['20MA'] = data['Close'].rolling(window=20).mean()
 
-    try:
-        latest_close = data['Close'].iloc[-1]
-        prev_close = data['Close'].iloc[-2]
-    except:
-        st.warning(f"{symbol} 收盤價讀取錯誤")
-        continue
-
+    # 取得最新值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -120,35 +123,18 @@ for name, symbol in stock_list.items():
     latest_10ma = data['10MA'].iloc[-1]
     latest_20ma = data['20MA'].iloc[-1]
 
-    # 財報
-    ticker = yf.Ticker(symbol)
-    try:
-        pe_ratio = ticker.info.get("trailingPE", None)
-        pb_ratio = ticker.info.get("priceToBook", None)
-    except:
-        pe_ratio, pb_ratio = None, None
-
-    # 顯示資料
+    # 顯示指標數值
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
     st.write(f"📊 5MA: {latest_5ma:.2f}, 10MA: {latest_10ma:.2f}, 20MA: {latest_20ma:.2f}")
     st.write(f"📊 RSI: {latest_rsi:.2f}")
-    st.write(f"📊 MACD: {latest_macd:.4f} / Signal: {latest_signal:.4f}")
+    st.write(f"📊 MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
     st.write(f"📊 CCI: {latest_cci:.2f}")
     st.write(f"📊 KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
-    st.write(f"📈 本益比 PE: {'N/A' if pe_ratio is None else round(pe_ratio, 2)}")
-    st.write(f"📘 淨值比 PB: {'N/A' if pb_ratio is None else round(pb_ratio, 2)}")
 
-    # 訊號與圖表
+    # 綜合評估
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
         st.info(s)
     st.success(overall)
-
-    with st.expander("📉 技術圖表", expanded=False):
-        st.line_chart(data[['Close', '5MA', '10MA', '20MA']].dropna(), height=250, use_container_width=True)
-        st.line_chart(data[['RSI']].dropna(), height=200)
-        st.line_chart(data[['MACD', 'Signal']].dropna(), height=200)
-        st.line_chart(data[['CCI']].dropna(), height=200)
-        st.line_chart(data[['%K', '%D']].dropna(), height=200)
 
     st.markdown("---")
