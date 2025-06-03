@@ -19,7 +19,7 @@ stock_list = {
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
     "Newmont (美股)": "NEM",
-    "Newmont (美股)": "NEM",
+    "Pfizer (美股)": "PFE",
 }
 
 end = datetime.datetime.now()
