@@ -156,6 +156,10 @@ for name, symbol in stock_list.items():
     latest_boxhigh = data['BoxHigh'].iloc[-1]
     latest_boxlow = data['BoxLow'].iloc[-1]
 
+    # 檢查箱型是否為有效數值
+    if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
+        latest_boxhigh = latest_boxlow = None
+
     ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
 
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
@@ -186,7 +190,10 @@ for name, symbol in stock_list.items():
     with col2:
         st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
+        if latest_boxhigh is not None and latest_boxlow is not None:
+            st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
