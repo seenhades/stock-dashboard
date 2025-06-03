@@ -22,9 +22,8 @@ stock_list = {
 }
 
 end = datetime.datetime.now()
-start = end - datetime.timedelta(days=90)
+start = end - datetime.timedelta(days=120)
 
-# 技術指標計算函數
 def calculate_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
@@ -74,12 +73,12 @@ def evaluate_ma_signals(price, ma5, ma10, ma20):
         return "➖ 均線無明顯趨勢排列"
 
 def box_range_analysis(series):
-    q1 = np.percentile(series, 25)
-    q3 = np.percentile(series, 75)
+    q1 = np.percentile(series.dropna(), 25)
+    q3 = np.percentile(series.dropna(), 75)
     iqr = q3 - q1
     lower = q1 - 1.5 * iqr
     upper = q3 + 1.5 * iqr
-    latest = series.iloc[-1]
+    latest = series.dropna().iloc[-1]
     if latest > upper:
         return "📈 股價突破箱型上緣（可能過熱）"
     elif latest < lower:
@@ -107,29 +106,23 @@ def evaluate_signals(rsi, macd, signal, cci, k, d):
         results.append("💰 KD 低檔黃金交叉 → 買進")
     elif k > 80 and d > 80 and k < d:
         results.append("⚠️ KD 高檔死亡交叉 → 賣出")
-
     buy_count = sum("買進" in x for x in results)
     sell_count = sum("賣出" in x for x in results)
-
     if buy_count > sell_count:
         summary = "🔵 綜合評估：買進"
     elif sell_count > buy_count:
         summary = "🔴 綜合評估：賣出"
     else:
         summary = "🟠 綜合評估：持有"
-
     return results, summary
 
-# 主程式
 for name, symbol in stock_list.items():
     st.markdown(f"## {name} ({symbol})")
     data = yf.download(symbol, start=start, end=end, interval='1d')
-
     if data.empty or len(data) < 30:
         st.warning(f"{symbol} 資料不足")
         continue
 
-    # 計算指標
     data["RSI"] = calculate_rsi(data["Close"])
     data["MACD"], data["Signal"] = calculate_macd(data["Close"])
     data["CCI"] = calculate_cci(data)
@@ -141,6 +134,10 @@ for name, symbol in stock_list.items():
 
     latest = data.iloc[-1]
     prev = data.iloc[-2]
+
+    if latest[["RSI", "MACD", "Signal", "CCI", "%K", "%D", "5MA", "10MA", "20MA"]].isnull().any():
+        st.warning("⚠️ 技術指標尚未完整計算，資料可能不足")
+        continue
 
     st.metric("📌 最新收盤價", f"{latest['Close']:.2f}", f"{latest['Close'] - prev['Close']:+.2f}")
 
@@ -175,7 +172,6 @@ for name, symbol in stock_list.items():
 
         st.markdown("### 📎 布林通道")
         st.markdown(f"<div style='font-size:18px'>中: {latest['BB_MID']:.2f}, 上: {latest['BB_UPPER']:.2f}, 下: {latest['BB_LOWER']:.2f}</div>", unsafe_allow_html=True)
-
         if latest['Close'] > latest['BB_UPPER']:
             st.info("📈 股價突破布林上軌，可能過熱")
         elif latest['Close'] < latest['BB_LOWER']:
@@ -183,7 +179,6 @@ for name, symbol in stock_list.items():
 
         st.info(f"📦 箱型分析：{box_range_analysis(data['Close'])}")
 
-    # 綜合訊號
     signals, summary = evaluate_signals(latest["RSI"], latest["MACD"], latest["Signal"], latest["CCI"], latest["%K"], latest["%D"])
     for s in signals:
         st.info(s)
