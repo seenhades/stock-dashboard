@@ -18,7 +18,8 @@ stock_list = {
     "Porsche SE (德股)": "PAH3.DE",
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
-    "Newmont (美股)": "NEM",    
+    "Newmont (美股)": "NEM",
+    "Newmont (美股)": "NEM",
 }
 
 end = datetime.datetime.now()
