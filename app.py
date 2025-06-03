@@ -4,7 +4,8 @@ import datetime
 import numpy as np
 import pandas as pd
 
-st.title("股票技術指標與收盤價監控")
+st.set_page_config(layout="wide")
+st.title("📈 股票技術指標與收盤價監控")
 
 stock_list = {
     "Panasonic (日股)": "6752.T",
@@ -17,7 +18,7 @@ stock_list = {
     "Porsche SE (德股)": "PAH3.DE",
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
-    "Newmont (美股)": "NEM",    
+    "Newmont (美股)": "NEM",
 }
 
 end = datetime.datetime.now()
@@ -55,17 +56,17 @@ def calculate_kd(data, k_period=9, d_period=3):
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
-def calculate_bollinger(data, period=20):
-    ma = data['Close'].rolling(window=period).mean()
-    std = data['Close'].rolling(window=period).std()
-    upper = ma + 2 * std
-    lower = ma - 2 * std
-    return upper, lower
+def calculate_bollinger_bands(series, window=20, num_std=2):
+    sma = series.rolling(window).mean()
+    std = series.rolling(window).std()
+    upper_band = sma + num_std * std
+    lower_band = sma - num_std * std
+    return upper_band, lower_band
 
-def box_range_analysis(close_series):
-    recent_high = close_series.rolling(window=20).max()
-    recent_low = close_series.rolling(window=20).min()
-    return recent_high, recent_low
+def calculate_box_range(series, period=20):
+    upper = series.rolling(window=period).max()
+    lower = series.rolling(window=period).min()
+    return upper, lower
 
 def evaluate_signals(rsi, macd, signal, cci, k, d):
     signals = []
@@ -115,7 +116,6 @@ for name, symbol in stock_list.items():
         st.warning(f"{symbol} 收盤價非有效數值")
         continue
 
-    # 技術指標計算
     data['RSI'] = calculate_rsi(data['Close'])
     data['MACD'], data['Signal'] = calculate_macd(data['Close'])
     data['CCI'] = calculate_cci(data)
@@ -123,10 +123,9 @@ for name, symbol in stock_list.items():
     data['5MA'] = data['Close'].rolling(window=5).mean()
     data['10MA'] = data['Close'].rolling(window=10).mean()
     data['20MA'] = data['Close'].rolling(window=20).mean()
-    data['BB_upper'], data['BB_lower'] = calculate_bollinger(data)
-    data['BoxHigh'], data['BoxLow'] = box_range_analysis(data['Close'])
+    data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
+    data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
 
-    # 最新值
     latest_rsi = data['RSI'].iloc[-1]
     latest_macd = data['MACD'].iloc[-1]
     latest_signal = data['Signal'].iloc[-1]
@@ -136,33 +135,29 @@ for name, symbol in stock_list.items():
     latest_5ma = data['5MA'].iloc[-1]
     latest_10ma = data['10MA'].iloc[-1]
     latest_20ma = data['20MA'].iloc[-1]
-    latest_bb_upper = data['BB_upper'].iloc[-1]
-    latest_bb_lower = data['BB_lower'].iloc[-1]
-    latest_box_high = data['BoxHigh'].iloc[-1]
-    latest_box_low = data['BoxLow'].iloc[-1]
+    latest_upperbb = data['UpperBB'].iloc[-1]
+    latest_lowerbb = data['LowerBB'].iloc[-1]
+    latest_boxhigh = data['BoxHigh'].iloc[-1]
+    latest_boxlow = data['BoxLow'].iloc[-1]
 
-    # 顯示資料
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-    st.write(f"📊 5MA: {latest_5ma:.2f}, 10MA: {latest_10ma:.2f}, 20MA: {latest_20ma:.2f}")
-    st.write(f"📊 RSI: {latest_rsi:.2f}")
-    st.write(f"📊 MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}")
-    st.write(f"📊 CCI: {latest_cci:.2f}")
-    st.write(f"📊 KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}")
-    st.write(f"📊 布林通道: Upper = {latest_bb_upper:.2f}, Lower = {latest_bb_lower:.2f}")
-    st.write(f"📊 箱型區間: 高點 = {latest_box_high:.2f}, 低點 = {latest_box_low:.2f}")
 
-    # 均線排列分析
-    if latest_5ma > latest_10ma > latest_20ma:
-        st.info("📈 均線多頭排列，可能為上升趨勢")
-    elif latest_5ma < latest_10ma < latest_20ma:
-        st.warning("📉 均線空頭排列，可能為下降趨勢")
-    else:
-        st.info("🔁 均線混合排列，趨勢不明")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 📊 均線與動能指標")
+        st.markdown(f"<div style='font-size: 18px;'>5MA: {latest_5ma:.2f}, 10MA: {latest_10ma:.2f}, 20MA: {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'>RSI: {latest_rsi:.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'>MACD: {latest_macd:.4f}, Signal: {latest_signal:.4f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'>CCI: {latest_cci:.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'>KD: %K = {latest_k:.2f}, %D = {latest_d:.2f}</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("### 📉 趨勢區間與價格帶")
+        st.markdown(f"<div style='font-size: 18px;'>布林通道：上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'>箱型區間：高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
 
-    # 綜合訊號評估
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
-        st.info(s)
-    st.success(overall)
+        st.markdown(f"<div style='font-size: 18px;'>{s}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 20px; font-weight: bold; color: green;'>{overall}</div>", unsafe_allow_html=True)
 
     st.markdown("---")
