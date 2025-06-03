@@ -36,6 +36,23 @@ def evaluate_ma_signals(latest_close, ma5, ma10, ma20):
     else:
         return "➖ 均線無明顯趨勢排列"
 
+def box_range_analysis(close_series):
+    q1 = np.percentile(close_series, 25)
+    q3 = np.percentile(close_series, 75)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    latest = close_series.iloc[-1]
+
+    if latest > upper_bound:
+        return "📈 股價突破箱型上緣（可能過熱）"
+    elif latest < lower_bound:
+        return "📉 股價跌破箱型下緣（可能超賣）"
+    elif q1 <= latest <= q3:
+        return "📦 股價位於箱型中段（正常波動）"
+    else:
+        return "➖ 股價位於箱型外圍（留意波動）"
+
 for name, symbol in stock_list.items():
     st.markdown(f"## {name} ({symbol})")
     data = yf.download(symbol, start=start, end=end, interval="1d")
@@ -108,6 +125,9 @@ for name, symbol in stock_list.items():
             st.info("📉 股價跌破布林下軌，可能超賣")
         elif latest_close > latest_bb_upper:
             st.info("📈 股價突破布林上軌，可能過熱")
+
+        box_signal = box_range_analysis(data['Close'])
+        st.info(f"📦 箱型分析：{box_signal}")
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
