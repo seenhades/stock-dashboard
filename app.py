@@ -106,6 +106,14 @@ def evaluate_signals(rsi, macd, signal, cci, k, d):
 
     return signals, overall
 
+def colorize(value, thresholds, colors):
+    if value < thresholds[0]:
+        return colors[0]
+    elif value > thresholds[1]:
+        return colors[2]
+    else:
+        return colors[1]
+
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
     data = yf.download(symbol, start=start, end=end, interval="1d")
@@ -154,16 +162,29 @@ for name, symbol in stock_list.items():
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### 📊 均線與動能指標")
+        st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>均線狀態：</b>{ma_status}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> {latest_rsi:.2f}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> {latest_macd:.4f}, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> {latest_cci:.2f}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>K:</b> {latest_k:.2f}, <b>D:</b> {latest_d:.2f}</div>", unsafe_allow_html=True)
+
+        rsi_color = colorize(latest_rsi, [30, 70], ["green", "black", "red"])
+        st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
+
+        macd_color = "green" if latest_macd > latest_signal else "red"
+        st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
+
+        cci_color = colorize(latest_cci, [-100, 100], ["green", "black", "red"])
+        st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
+
+        if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
+            kd_color = "green"
+        elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
+            kd_color = "red"
+        else:
+            kd_color = "black"
+        st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
 
     with col2:
-        st.markdown("### 📉 趨勢區間與價格帶")
+        st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
 
