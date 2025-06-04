@@ -7,52 +7,28 @@ import pandas as pd
 st.set_page_config(layout="wide")
 st.title("📈 股票技術指標與收盤價監控")
 
-# 注入日夜模式CSS
+# 固定淺色風格 CSS（取消日夜模式）
 st.markdown(
     """
     <style>
-    /* 日間模式 */
-    @media (prefers-color-scheme: light) {
-        .reportview-container, .main {
-            background-color: #ffffff;
-            color: #000000;
-        }
-        .stMarkdown div {
-            color: #000000;
-        }
-        .indicator-box {
-            background-color: #f0f2f6;
-            color: #000000;
-            padding: 6px;
-            border-radius: 5px;
-        }
-        .overall-box {
-            background-color: #eef;
-            padding: 8px;
-            border-radius: 8px;
-        }
+    .indicator-box {
+        background-color: #f0f2f6;
+        color: #000000;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 18px;
+        font-weight: 500;
     }
-
-    /* 夜間模式 */
-    @media (prefers-color-scheme: dark) {
-        .reportview-container, .main {
-            background-color: #121212;
-            color: #e0e0e0;
-        }
-        .stMarkdown div {
-            color: #e0e0e0;
-        }
-        .indicator-box {
-            background-color: #1f1f1f;
-            color: #e0e0e0;
-            padding: 6px;
-            border-radius: 5px;
-        }
-        .overall-box {
-            background-color: #222244;
-            padding: 8px;
-            border-radius: 8px;
-        }
+    .overall-box {
+        background-color: #dde6ff;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 12px;
+        margin-bottom: 12px;
+        color: #003399;
     }
     </style>
     """,
@@ -217,41 +193,37 @@ for name, symbol in stock_list.items():
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+        st.markdown("### 📊 技術指標")
 
+        # RSI 卡片
         rsi_color = colorize(latest_rsi, [30, 70], ["green", "black", "red"])
-        st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='indicator-box'>RSI: <span style='color:{rsi_color}; font-weight:bold;'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
 
+        # MACD 卡片
         macd_color = "green" if latest_macd > latest_signal else "red"
-        st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='indicator-box'>MACD: <span style='color:{macd_color}; font-weight:bold;'>{latest_macd:.4f}</span>, Signal: {latest_signal:.4f}</div>", unsafe_allow_html=True)
 
+        # CCI 卡片
         cci_color = colorize(latest_cci, [-100, 100], ["green", "black", "red"])
-        st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='indicator-box'>CCI: <span style='color:{cci_color}; font-weight:bold;'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
 
-        if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-            kd_color = "green"
-        elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-            kd_color = "red"
-        else:
-            kd_color = "black"
-        st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
+        # 均線排列卡片
+        st.markdown(f"<div class='indicator-box'>{ma_status}</div>", unsafe_allow_html=True)
 
     with col2:
-        st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
+        st.markdown("### 📉 趨勢區間與價格帶")
+        st.markdown(f"布林通道上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}")
         if latest_boxhigh is not None and latest_boxlow is not None:
-            st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
+            st.markdown(f"箱型區間高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}")
         else:
-            st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
-
-    st.markdown(f"<div style='font-size: 18px;'><b>均線狀態：</b>{ma_status}</div>", unsafe_allow_html=True)
+            st.markdown("箱型區間資料不足")
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
-        st.markdown(f"<div class='indicator-box' style='font-size: 18px;'>{s}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='indicator-box'>{s}</div>", unsafe_allow_html=True)
 
-    color = "green" if "買進" in overall else "red" if "賣出" in overall else "orange"
-    st.markdown(f"<div class='overall-box' style='font-size: 20px; font-weight: bold; color:{color};'>{overall}</div>", unsafe_allow_html=True)
+    # 整體評估顯示
+    color = "#0073e6" if "買進" in overall else "#d42c2c" if "賣出" in overall else "#e68a00"
+    st.markdown(f"<div class='overall-box' style='color:{color};'>{overall}</div>", unsafe_allow_html=True)
 
     st.markdown("---")
