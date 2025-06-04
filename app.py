@@ -1,25 +1,11 @@
 import streamlit as st
 import yfinance as yf
-import datetime
-import numpy as np
 import pandas as pd
+import datetime
 
-st.set_page_config(layout="wide")
-st.title("📈 股票技術指標與收盤價監控")
-
-stock_list = {
-    "Panasonic (日股)": "6752.T",
-    "NTT (日股)": "9432.T",
-    "1306 ETF (日股)": "1306.T",
-    "國泰航空(港股)": "0293.HK",
-    "碧桂園(港股)": "2007.HK",
-    "中糧家佳康(港股)": "1610.HK",
-    "Shell (英股)": "SHEL.L",
-    "Porsche SE (德股)": "PAH3.DE",
-    "Infineon (德股)": "IFX.DE",
-    "Organon (美股)": "OGN",
-    "Newmont (美股)": "NEM",
-}
+# 股票代碼與名稱（範例用台積電2330.TW，可替換）
+ticker_symbol = "2330.TW"
+ticker = yf.Ticker(ticker_symbol)
 
 # 取得歷史資料
 end_date = datetime.datetime.now()
