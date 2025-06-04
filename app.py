@@ -209,65 +209,87 @@ for name, symbol in stock_list.items():
             background-color: #f7f9fc;
             border-left: 6px solid {ma_color};
             padding: 12px 16px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 500;
-            color: {ma_color};
+            margin: 12px 0;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         '>
-            {ma_status}
+            <div>📈</div>
+            <div style='color:{ma_color}; font-weight: 600;'>{ma_status}</div>
         </div>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True,
     )
 
-    # 指標卡片顯示（RSI, MACD, CCI, KD）
-    indicator_cards = []
-
-    # RSI 卡片
+    # === 這裡是重點：將 RSI, MACD, CCI, KD 指標改成「圖示+文字同一行」卡片呈現，風格與均線相同 ===
+    # 先建立判斷文字與顏色
+    rsi_signal = ""
     if latest_rsi < 20:
-        indicator_cards.append(("RSI 過冷", "🧊 可能超賣，買進訊號", "green"))
+        rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
     elif latest_rsi > 70:
-        indicator_cards.append(("RSI 過熱", "🔥 可能過買，賣出訊號", "red"))
-
-    # MACD 卡片
-    if latest_macd > latest_signal:
-        indicator_cards.append(("MACD 黃金交叉", "💰 買進訊號", "green"))
+        rsi_signal = "🔥 RSI過熱，可能過買，賣出訊號"
     else:
-        indicator_cards.append(("MACD 死亡交叉", "⚠️ 賣出訊號", "red"))
+        rsi_signal = "🔄 RSI中性"
 
-    # CCI 卡片
+    macd_signal = ""
+    if latest_macd > latest_signal:
+        macd_signal = "💰 MACD黃金交叉，買進訊號"
+    else:
+        macd_signal = "⚠️ MACD死亡交叉，賣出訊號"
+
+    cci_signal = ""
     if latest_cci < -100:
-        indicator_cards.append(("CCI 過低", "🧊 可能超賣，買進訊號", "green"))
+        cci_signal = "🧊 CCI過低，可能超賣，買進訊號"
     elif latest_cci > 100:
-        indicator_cards.append(("CCI 過高", "🔥 可能過買，賣出訊號", "red"))
+        cci_signal = "🔥 CCI過高，可能過買，賣出訊號"
+    else:
+        cci_signal = "🔄 CCI中性"
 
-    # KD 卡片
+    kd_signal = ""
     if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-        indicator_cards.append(("KD 黃金交叉", "💰 低檔交叉，買進訊號", "green"))
+        kd_signal = "💰 KD低檔黃金交叉，買進訊號"
     elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-        indicator_cards.append(("KD 死亡交叉", "⚠️ 高檔交叉，賣出訊號", "red"))
+        kd_signal = "⚠️ KD高檔死亡交叉，賣出訊號"
+    else:
+        kd_signal = "🔄 KD中性"
 
-    for title, content, color in indicator_cards:
-        st.markdown(
-            f"""
-            <div style='
-                background-color: #f5f7fa;
-                border-left: 6px solid {color};
-                padding: 12px 16px;
-                margin-top: 6px;
-                margin-bottom: 6px;
-                border-radius: 8px;
-                font-size: 16px;
-                color: {color};
-            '>
-                <b>{title}</b><br>{content}
-            </div>
-            """, unsafe_allow_html=True
-        )
+    # 函式：產生卡片 HTML，圖示+文字同一行
+    def render_card(icon, text, color):
+        return f"""
+        <div style='
+            background-color: #f7f9fc;
+            border-left: 6px solid {color};
+            padding: 12px 16px;
+            margin: 8px 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        '>
+            <div style='font-size: 24px;'>{icon}</div>
+            <div style='color:{color}; font-weight: 600;'>{text}</div>
+        </div>
+        """
 
-    # 綜合評估卡片
-    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
-    color = "green" if "買進" in overall else "red" if "賣出" in overall else "orange"
-    st.markdown(f"<div style='font-size: 20px; font-weight: bold; background-color:#eef; padding:8px; border-radius:8px; color:{color};'>{overall}</div>", unsafe_allow_html=True)
+    # 決定顏色
+    def get_color(signal_text):
+        if "買進" in signal_text:
+            return "green"
+        elif "賣出" in signal_text:
+            return "red"
+        else:
+            return "orange"
+
+    # 顯示卡片
+    st.markdown(render_card("📉", f"RSI: {latest_rsi:.2f} - {rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📈", f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📊", f"CCI: {latest_cci:.2f} - {cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("🎯", f"KD: K={latest_k:.2f}, D={latest_d:.2f} - {kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
+
+    # 綜合評估
+    signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
+    overall_color = get_color(overall_signal)
+    st.markdown(render_card("🟢", overall_signal, overall_color), unsafe_allow_html=True)
+
     st.markdown("---")
