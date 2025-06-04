@@ -21,107 +21,116 @@ stock_list = {
     "Newmont (美股)": "NEM",
 }
 
-end = (datetime.datetime.now() - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-start = end - datetime.timedelta(days=90)
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
-# 技術指標函數...（略，保持原樣）
-# evaluate_signals, colorize, 等函數保持原樣
+def calculate_macd(series, fast=12, slow=26, signal=9):
+    ema_fast = series.ewm(span=fast, adjust=False).mean()
+    ema_slow = series.ewm(span=slow, adjust=False).mean()
+    macd = ema_fast - ema_slow
+    signal_line = macd.ewm(span=signal, adjust=False).mean()
+    return macd, signal_line
 
-for name, symbol in stock_list.items():
-    st.subheader(f"{name} ({symbol})")
-    data = yf.download(symbol, start=start, end=end, interval="1d")
-    if data.empty or len(data) < 30:
-        st.warning(f"{symbol} 資料不足或無法取得")
-        continue
+def calculate_cci(data, period=20):
+    tp = (data['High'] + data['Low'] + data['Close']) / 3
+    cci = (tp - tp.rolling(window=period).mean()) / (0.015 * tp.rolling(window=period).std())
+    return cci
 
-    try:
-        latest_close = data["Close"].iloc[-1].item()
-        prev_close = data["Close"].iloc[-2].item()
-    except Exception as e:
-        st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
-        continue
+def calculate_kd(data, period=14):
+    low_min = data['Low'].rolling(window=period).min()
+    high_max = data['High'].rolling(window=period).max()
+    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
+    k = rsv.ewm(com=2).mean()
+    d = k.ewm(com=2).mean()
+    return k, d
 
-    if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
-        st.warning(f"{symbol} 收盤價非有效數值")
-        continue
+def calculate_bollinger_bands(series, window=20):
+    sma = series.rolling(window=window).mean()
+    std = series.rolling(window=window).std()
+    upper = sma + 2 * std
+    lower = sma - 2 * std
+    return upper, lower
 
-    data['RSI'] = calculate_rsi(data['Close'])
-    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-    data['CCI'] = calculate_cci(data)
-    data['%K'], data['%D'] = calculate_kd(data)
-    data['5MA'] = data['Close'].rolling(window=5).mean()
-    data['10MA'] = data['Close'].rolling(window=10).mean()
-    data['20MA'] = data['Close'].rolling(window=20).mean()
-    data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
-    data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
+def calculate_box_range(series, window=20):
+    box_high = series.rolling(window=window).max()
+    box_low = series.rolling(window=window).min()
+    return box_high, box_low
 
-    latest_rsi = data['RSI'].iloc[-1]
-    latest_macd = data['MACD'].iloc[-1]
-    latest_signal = data['Signal'].iloc[-1]
-    latest_cci = data['CCI'].iloc[-1]
-    latest_k = data['%K'].iloc[-1]
-    latest_d = data['%D'].iloc[-1]
-    latest_5ma = data['5MA'].iloc[-1]
-    latest_10ma = data['10MA'].iloc[-1]
-    latest_20ma = data['20MA'].iloc[-1]
-    latest_upperbb = data['UpperBB'].iloc[-1]
-    latest_lowerbb = data['LowerBB'].iloc[-1]
-    latest_boxhigh = data['BoxHigh'].iloc[-1]
-    latest_boxlow = data['BoxLow'].iloc[-1]
+def evaluate_ma_trend(ma5, ma10, ma20):
+    if ma5 > ma10 > ma20:
+        return "多頭排列"
+    elif ma5 < ma10 < ma20:
+        return "空頭排列"
+    elif abs(ma5 - ma10) < 0.2 and abs(ma10 - ma20) < 0.2:
+        return "均線糾結"
+    else:
+        return "不明確"
 
-    if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
-        latest_boxhigh = latest_boxlow = None
+def evaluate_signals(rsi, macd, signal, cci, k, d, close, bb_upper, bb_lower, box_high, box_low):
+    result = []
+    if rsi < 30:
+        result.append("RSI 超賣，可考慮買進")
+    elif rsi > 70:
+        result.append("RSI 超買，可能回檔")
+    else:
+        result.append("RSI 中性")
 
-    ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-    st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+    if macd > signal:
+        result.append("MACD 黃金交叉")
+    elif macd < signal:
+        result.append("MACD 死亡交叉")
+    else:
+        result.append("MACD 中性")
 
-    st.markdown("### 🧭 <b>均線與動能指標</b>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style='font-size:18px;'>
-    🔹 <b>5MA</b>: {0:.2f}, <b>10MA</b>: {1:.2f}, <b>20MA</b>: {2:.2f}<br>
-    🔹 <b>RSI</b>: <span style='color:{3}'>{4:.2f}</span><br>
-    🔹 <b>MACD</b>: <span style='color:{5}'>{6:.4f}</span>, Signal: {7:.4f}<br>
-    🔹 <b>CCI</b>: <span style='color:{8}'>{9:.2f}</span><br>
-    🔹 <b>K</b>: <span style='color:{10}'>{11:.2f}</span>, <b>D</b>: <span style='color:{10}'>{12:.2f}</span>
-    </div>
-    """.format(
-        latest_5ma, latest_10ma, latest_20ma,
-        colorize(latest_rsi, [30, 70], ["green", "white", "red"]), latest_rsi,
-        "green" if latest_macd > latest_signal else "red", latest_macd, latest_signal,
-        colorize(latest_cci, [-100, 100], ["green", "white", "red"]), latest_cci,
-        "green" if latest_k > latest_d and latest_k < 20 else "red" if latest_k < latest_d and latest_k > 80 else "white",
-        latest_k, latest_d
-    ), unsafe_allow_html=True)
+    if cci > 100:
+        result.append("CCI 強勢區域")
+    elif cci < -100:
+        result.append("CCI 弱勢區域")
+    else:
+        result.append("CCI 中性")
 
-    st.markdown("### 📐 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style='font-size:18px;'>
-    🔹 <b>布林通道</b>: 上軌 = {0:.2f}, 下軌 = {1:.2f}<br>
-    🔹 <b>箱型區間</b>: 高點 = {2}, 低點 = {3}
-    </div>
-    """.format(
-        latest_upperbb, latest_lowerbb,
-        f"{latest_boxhigh:.2f}" if latest_boxhigh else "資料不足",
-        f"{latest_boxlow:.2f}" if latest_boxlow else "資料不足"
-    ), unsafe_allow_html=True)
+    if k > d and k < 20:
+        result.append("KD 黃金交叉（低檔）")
+    elif k < d and k > 80:
+        result.append("KD 死亡交叉（高檔）")
+    else:
+        result.append("KD 中性")
 
-    st.markdown("### 🧠 <b>指標分析</b>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div style='font-size:18px; background-color:#222; color:#eee; padding:10px; border-radius:6px;'>
-    <b>🔸 均線：</b> {ma_status}<br>
-    <b>🔸 RSI：</b> {evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)[0][0]}<br>
-    <b>🔸 MACD：</b> {evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)[0][1]}<br>
-    <b>🔸 CCI：</b> {evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)[0][2]}<br>
-    <b>🔸 KD：</b> {evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)[0][3]}<br>
-    <b>🔸 布林通道：</b> {"偏高" if latest_close > latest_upperbb else "偏低" if latest_close < latest_lowerbb else "中性"}<br>
-    <b>🔸 箱型：</b> {"突破箱頂" if latest_close > latest_boxhigh else "跌破箱底" if latest_close < latest_boxlow else "箱內震盪"}
-    </div>
-    """, unsafe_allow_html=True)
+    if close >= bb_upper:
+        result.append("布林通道：高於上軌，可能過熱")
+    elif close <= bb_lower:
+        result.append("布林通道：低於下軌，可能超賣")
+    else:
+        result.append("布林通道：正常範圍")
 
-    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
-    for s in signals:
-        st.markdown(f"<div style='font-size: 18px; background-color:#333; color:#ddd; padding:6px; border-radius:5px;'>{s}</div>", unsafe_allow_html=True)
+    if close >= box_high:
+        result.append("箱型區間：接近壓力位")
+    elif close <= box_low:
+        result.append("箱型區間：接近支撐位")
+    else:
+        result.append("箱型區間：區間震盪")
 
-    color = "lightgreen" if "買進" in overall else "salmon" if "賣出" in overall else "orange"
-    st.markdown(f"<div style='font-size: 20px; font-weight: bold; background-color:#111; padding:8px; border-radius:8px; color:{color};'>{overall}</div>", unsafe_allow_html=True)
-    st.markdown("---")
+    if result.count("中性") <= 3 and any("黃金" in r or "強勢" in r for r in result):
+        overall = "🟢 綜合評估：可考慮買進"
+    elif result.count("中性") <= 3 and any("死亡" in r or "弱勢" in r for r in result):
+        overall = "🔴 綜合評估：建議觀望或賣出"
+    else:
+        overall = "🟡 綜合評估：中性，請觀察後續走勢"
+    return result, overall
+
+def colorize(value, thresholds, colors):
+    if value < thresholds[0]:
+        return colors[0]
+    elif value > thresholds[1]:
+        return colors[2]
+    else:
+        return colors[1]
+
+# 👉 UI 顯示邏輯會在資料下載與計算後加入
