@@ -7,117 +7,6 @@ import pandas as pd
 st.set_page_config(layout="wide")
 st.title("📈 股票技術指標與收盤價監控")
 
-# 計算與分析函數區
-
-def calculate_rsi(series, period=14):
-    delta = series.diff()
-    gain = delta.where(delta > 0, 0)
-    loss = -delta.where(delta < 0, 0)
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
-
-def calculate_macd(series, fast=12, slow=26, signal=9):
-    ema_fast = series.ewm(span=fast, adjust=False).mean()
-    ema_slow = series.ewm(span=slow, adjust=False).mean()
-    macd = ema_fast - ema_slow
-    signal_line = macd.ewm(span=signal, adjust=False).mean()
-    return macd, signal_line
-
-def calculate_cci(data, period=20):
-    tp = (data['High'] + data['Low'] + data['Close']) / 3
-    cci = (tp - tp.rolling(window=period).mean()) / (0.015 * tp.rolling(window=period).std())
-    return cci
-
-def calculate_kd(data, period=14):
-    low_min = data['Low'].rolling(window=period).min()
-    high_max = data['High'].rolling(window=period).max()
-    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
-    k = rsv.ewm(com=2).mean()
-    d = k.ewm(com=2).mean()
-    return k, d
-
-def calculate_bollinger_bands(series, window=20):
-    sma = series.rolling(window=window).mean()
-    std = series.rolling(window=window).std()
-    upper = sma + 2 * std
-    lower = sma - 2 * std
-    return upper, lower
-
-def calculate_box_range(series, window=20):
-    box_high = series.rolling(window=window).max()
-    box_low = series.rolling(window=window).min()
-    return box_high, box_low
-
-def evaluate_ma_trend(ma5, ma10, ma20):
-    try:
-        if ma5.iloc[-1] > ma10.iloc[-1] > ma20.iloc[-1]:
-            return "多頭排列"
-        elif ma5.iloc[-1] < ma10.iloc[-1] < ma20.iloc[-1]:
-            return "空頭排列"
-        elif abs(ma5.iloc[-1] - ma10.iloc[-1]) < 0.2 and abs(ma10.iloc[-1] - ma20.iloc[-1]) < 0.2:
-            return "均線糾結"
-        else:
-            return "不明確"
-    except:
-        return "資料不足"
-
-def evaluate_signals(rsi, macd, signal, cci, k, d, close, bb_upper, bb_lower, box_high, box_low):
-    result = []
-    if rsi < 30:
-        result.append("RSI 超賣，可考慮買進")
-    elif rsi > 70:
-        result.append("RSI 超買，可能回檔")
-    else:
-        result.append("RSI 中性")
-
-    if macd > signal:
-        result.append("MACD 黃金交叉")
-    elif macd < signal:
-        result.append("MACD 死亡交叉")
-    else:
-        result.append("MACD 中性")
-
-    if cci > 100:
-        result.append("CCI 強勢區域")
-    elif cci < -100:
-        result.append("CCI 弱勢區域")
-    else:
-        result.append("CCI 中性")
-
-    if k > d and k < 20:
-        result.append("KD 黃金交叉（低檔）")
-    elif k < d and k > 80:
-        result.append("KD 死亡交叉（高檔）")
-    else:
-        result.append("KD 中性")
-
-    if close >= bb_upper:
-        result.append("布林通道：高於上軌，可能過熱")
-    elif close <= bb_lower:
-        result.append("布林通道：低於下軌，可能超賣")
-    else:
-        result.append("布林通道：正常範圍")
-
-    if close >= box_high:
-        result.append("箱型區間：接近壓力位")
-    elif close <= box_low:
-        result.append("箱型區間：接近支撐位")
-    else:
-        result.append("箱型區間：區間震盪")
-
-    neutral_count = sum("中性" in r for r in result)
-    if neutral_count <= 3 and any("黃金" in r or "強勢" in r for r in result):
-        overall = "🟢 綜合評估：可考慮買進"
-    elif neutral_count <= 3 and any("死亡" in r or "弱勢" in r for r in result):
-        overall = "🔴 綜合評估：建議觀望或賣出"
-    else:
-        overall = "🟡 綜合評估：中性，請觀察後續走勢"
-    return result, overall
-
-# 股票列表與選擇
 stock_list = {
     "Panasonic (日股)": "6752.T",
     "NTT (日股)": "9432.T",
@@ -132,70 +21,180 @@ stock_list = {
     "Newmont (美股)": "NEM",
 }
 
-selected_stock = st.selectbox("請選擇股票：", list(stock_list.keys()))
-ticker = stock_list[selected_stock]
-end_date = datetime.datetime.now()
-start_date = end_date - datetime.timedelta(days=90)
-data = yf.download(ticker, start=start_date, end=end_date)
-data.dropna(inplace=True)
+end = datetime.datetime.now()
+start = end - datetime.timedelta(days=90)
 
-if data.empty:
-    st.error("無法取得該股票資料，請稍後再試或選擇其他股票。")
-    st.stop()
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
-# 計算指標
-data['MA5'] = data['Close'].rolling(window=5).mean()
-data['MA10'] = data['Close'].rolling(window=10).mean()
-data['MA20'] = data['Close'].rolling(window=20).mean()
-data['RSI'] = calculate_rsi(data['Close'])
-data['MACD'], data['MACD_signal'] = calculate_macd(data['Close'])
-data['CCI'] = calculate_cci(data)
-data['K'], data['D'] = calculate_kd(data)
-data['BB_upper'], data['BB_lower'] = calculate_bollinger_bands(data['Close'])
-data['Box_High'], data['Box_Low'] = calculate_box_range(data['Close'])
+def calculate_macd(series, span_short=12, span_long=26, signal_span=9):
+    ema_short = series.ewm(span=span_short, adjust=False).mean()
+    ema_long = series.ewm(span=span_long, adjust=False).mean()
+    macd = ema_short - ema_long
+    signal = macd.ewm(span=signal_span, adjust=False).mean()
+    return macd, signal
 
-# 把 NaN 用前一筆補齊（避免float轉換錯誤）
-data.fillna(method='ffill', inplace=True)
-latest = data.iloc[-1]
+def calculate_cci(data, period=20):
+    tp = (data['High'] + data['Low'] + data['Close']) / 3
+    sma = tp.rolling(period).mean()
+    mad = tp.rolling(period).apply(lambda x: np.fabs(x - x.mean()).mean())
+    cci = (tp - sma) / (0.015 * mad)
+    return cci
 
-ma_trend = evaluate_ma_trend(data['MA5'], data['MA10'], data['MA20'])
+def calculate_kd(data, k_period=9, d_period=3):
+    low_min = data['Low'].rolling(window=k_period).min()
+    high_max = data['High'].rolling(window=k_period).max()
+    rsv = (data['Close'] - low_min) / (high_max - low_min) * 100
+    k = rsv.ewm(com=d_period-1, adjust=False).mean()
+    d = k.ewm(com=d_period-1, adjust=False).mean()
+    return k, d
 
-signals, overall = evaluate_signals(
-    float(latest['RSI']),
-    float(latest['MACD']),
-    float(latest['MACD_signal']),
-    float(latest['CCI']),
-    float(latest['K']),
-    float(latest['D']),
-    float(latest['Close']),
-    float(latest['BB_upper']),
-    float(latest['BB_lower']),
-    float(latest['Box_High']),
-    float(latest['Box_Low'])
-)
+def calculate_bollinger_bands(series, window=20, num_std=2):
+    sma = series.rolling(window).mean()
+    std = series.rolling(window).std()
+    upper_band = sma + num_std * std
+    lower_band = sma - num_std * std
+    return upper_band, lower_band
 
-st.markdown("## 📊 技術指標一覽")
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("### 📌 均線與動能指標")
-    st.markdown(f"- 🔹 5MA：{latest['MA5']:.2f}")
-    st.markdown(f"- 🔹 10MA：{latest['MA10']:.2f}")
-    st.markdown(f"- 🔹 20MA：{latest['MA20']:.2f}")
-    st.markdown(f"- 🔹 RSI：{latest['RSI']:.2f}")
-    st.markdown(f"- 🔹 MACD：{latest['MACD']:.2f} / Signal：{latest['MACD_signal']:.2f}")
-    st.markdown(f"- 🔹 CCI：{latest['CCI']:.2f}")
-    st.markdown(f"- 🔹 KD：K={latest['K']:.2f}, D={latest['D']:.2f}")
+def calculate_box_range(series, period=20):
+    upper = series.rolling(window=period).max()
+    lower = series.rolling(window=period).min()
+    return upper, lower
 
-with col2:
-    st.markdown("### 📌 趨勢區間與價格帶")
-    st.markdown(f"- 🔹 布林上軌：{latest['BB_upper']:.2f}")
-    st.markdown(f"- 🔹 布林下軌：{latest['BB_lower']:.2f}")
-    st.markdown(f"- 🔹 箱型區間上緣：{latest['Box_High']:.2f}")
-    st.markdown(f"- 🔹 箱型區間下緣：{latest['Box_Low']:.2f}")
+def evaluate_ma_trend(ma5, ma10, ma20):
+    if ma5 > ma10 > ma20:
+        return "📈 均線呈多頭排列"
+    elif ma5 < ma10 < ma20:
+        return "📉 均線呈空頭排列"
+    else:
+        return "🔄 均線呈糾結狀態"
 
-st.markdown("### 📋 指標分析")
-st.markdown(f"- 均線排列：**{ma_trend}**")
-for s in signals:
-    st.markdown(f"- {s}")
+def evaluate_signals(rsi, macd, signal, cci, k, d):
+    signals = []
+    if rsi < 20:
+        signals.append("🧊 RSI過冷，可能超賣，買進訊號")
+    elif rsi > 70:
+        signals.append("🔥 RSI過熱，可能過買，賣出訊號")
+    if macd > signal:
+        signals.append("💰 MACD黃金交叉，買進訊號")
+    else:
+        signals.append("⚠️ MACD死亡交叉，賣出訊號")
+    if cci < -100:
+        signals.append("🧊 CCI過低，可能超賣，買進訊號")
+    elif cci > 100:
+        signals.append("🔥 CCI過高，可能過買，賣出訊號")
+    if k < 20 and d < 20 and k > d:
+        signals.append("💰 KD低檔黃金交叉，買進訊號")
+    elif k > 80 and d > 80 and k < d:
+        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
-st.markdown(f"## 🧠 {overall}")
+    buy_signals = sum(1 for s in signals if "買進" in s)
+    sell_signals = sum(1 for s in signals if "賣出" in s)
+    if buy_signals > sell_signals:
+        overall = "🔵 綜合評估：買進"
+    elif sell_signals > buy_signals:
+        overall = "🔴 綜合評估：賣出"
+    else:
+        overall = "🟠 綜合評估：持有"
+
+    return signals, overall
+
+def colorize(value, thresholds, colors):
+    if value < thresholds[0]:
+        return colors[0]
+    elif value > thresholds[1]:
+        return colors[2]
+    else:
+        return colors[1]
+
+for name, symbol in stock_list.items():
+    st.subheader(f"{name} ({symbol})")
+    data = yf.download(symbol, start=start, end=end, interval="1d")
+    if data.empty or len(data) < 30:
+        st.warning(f"{symbol} 資料不足或無法取得")
+        continue
+
+    try:
+        latest_close = data["Close"].iloc[-1].item()
+        prev_close = data["Close"].iloc[-2].item()
+    except Exception as e:
+        st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
+        continue
+
+    if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
+        st.warning(f"{symbol} 收盤價非有效數值")
+        continue
+
+    data['RSI'] = calculate_rsi(data['Close'])
+    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+    data['CCI'] = calculate_cci(data)
+    data['%K'], data['%D'] = calculate_kd(data)
+    data['5MA'] = data['Close'].rolling(window=5).mean()
+    data['10MA'] = data['Close'].rolling(window=10).mean()
+    data['20MA'] = data['Close'].rolling(window=20).mean()
+    data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
+    data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
+
+    latest_rsi = data['RSI'].iloc[-1]
+    latest_macd = data['MACD'].iloc[-1]
+    latest_signal = data['Signal'].iloc[-1]
+    latest_cci = data['CCI'].iloc[-1]
+    latest_k = data['%K'].iloc[-1]
+    latest_d = data['%D'].iloc[-1]
+    latest_5ma = data['5MA'].iloc[-1]
+    latest_10ma = data['10MA'].iloc[-1]
+    latest_20ma = data['20MA'].iloc[-1]
+    latest_upperbb = data['UpperBB'].iloc[-1]
+    latest_lowerbb = data['LowerBB'].iloc[-1]
+    latest_boxhigh = data['BoxHigh'].iloc[-1]
+    latest_boxlow = data['BoxLow'].iloc[-1]
+
+    if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
+        latest_boxhigh = latest_boxlow = None
+
+    ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
+
+    st.markdown(f"### 📌 最新收盤價：{latest_close:.2f} （漲跌：{latest_close - prev_close:+.2f}）")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("#### 📊 均線與動能指標")
+        st.markdown(f"5MA: {latest_5ma:.2f} | 10MA: {latest_10ma:.2f} | 20MA: {latest_20ma:.2f}")
+        rsi_color = colorize(latest_rsi, [30, 70], ["green", "black", "red"])
+        st.markdown(f"RSI: <span style='color:{rsi_color}; font-weight:bold'>{latest_rsi:.2f}</span>", unsafe_allow_html=True)
+        macd_color = "green" if latest_macd > latest_signal else "red"
+        st.markdown(f"MACD: <span style='color:{macd_color}; font-weight:bold'>{latest_macd:.4f}</span> | Signal: {latest_signal:.4f}", unsafe_allow_html=True)
+        cci_color = colorize(latest_cci, [-100, 100], ["green", "black", "red"])
+        st.markdown(f"CCI: <span style='color:{cci_color}; font-weight:bold'>{latest_cci:.2f}</span>", unsafe_allow_html=True)
+        if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
+            kd_color = "green"
+        elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
+            kd_color = "red"
+        else:
+            kd_color = "black"
+        st.markdown(f"K: <span style='color:{kd_color}; font-weight:bold'>{latest_k:.2f}</span> | D: <span style='color:{kd_color}; font-weight:bold'>{latest_d:.2f}</span>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("#### 📉 趨勢區間與價格帶")
+        st.markdown(f"布林通道上軌: {latest_upperbb:.2f} | 下軌: {latest_lowerbb:.2f}")
+        if latest_boxhigh is not None and latest_boxlow is not None:
+            st.markdown(f"箱型區間高點: {latest_boxhigh:.2f} | 低點: {latest_boxlow:.2f}")
+        else:
+            st.markdown("<span style='color:gray'>箱型區間資料不足</span>", unsafe_allow_html=True)
+
+    st.markdown(f"**均線狀態：** {ma_status}")
+
+    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
+    for s in signals:
+        st.markdown(f"<div style='background:#f0f2f6; padding:8px; margin:5px 0; border-radius:6px;'>{s}</div>", unsafe_allow_html=True)
+
+    color = "green" if "買進" in overall else "red" if "賣出" in overall else "orange"
+    st.markdown(f"<div style='font-size:22px; font-weight:bold; padding:12px; border-radius:8px; background:#eef; color:{color}; text-align:center;'>{overall}</div>")
+    st.markdown("---")
