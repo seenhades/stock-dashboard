@@ -281,11 +281,17 @@ for name, symbol in stock_list.items():
         else:
             return "orange"
 
-    # 顯示卡片
-    st.markdown(render_card("📉", f"RSI: {latest_rsi:.2f} - {rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
-    st.markdown(render_card("📈", f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
-    st.markdown(render_card("📊", f"CCI: {latest_cci:.2f} - {cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
-    st.markdown(render_card("🎯", f"KD: K={latest_k:.2f}, D={latest_d:.2f} - {kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
+# 顯示卡片（只呈現非中性訊號）
+for label, signal_text, value_text, icon in [
+    ("RSI", rsi_signal, f"{latest_rsi:.2f}", "📉"),
+    ("MACD", macd_signal, f"{latest_macd:.4f} (Signal: {latest_signal:.4f})", "📈"),
+    ("CCI", cci_signal, f"{latest_cci:.2f}", "📊"),
+    ("KD", kd_signal, f"K={latest_k:.2f}, D={latest_d:.2f}", "🎯"),
+]:
+    if "中性" not in signal_text:
+        color = get_color(signal_text)
+        st.markdown(render_card(icon, f"{label}: {value_text} - {signal_text}", color), unsafe_allow_html=True)
+
 
     # 綜合評估
     signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
