@@ -221,10 +221,53 @@ for name, symbol in stock_list.items():
         """, unsafe_allow_html=True
     )
 
-    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
-    for s in signals:
-        st.markdown(f"<div style='font-size: 18px; background-color:#f0f2f6; padding:6px; border-radius:5px;'>{s}</div>", unsafe_allow_html=True)
+    # 指標卡片顯示（RSI, MACD, CCI, KD）
+    indicator_cards = []
 
+    # RSI 卡片
+    if latest_rsi < 20:
+        indicator_cards.append(("RSI 過冷", "🧊 可能超賣，買進訊號", "green"))
+    elif latest_rsi > 70:
+        indicator_cards.append(("RSI 過熱", "🔥 可能過買，賣出訊號", "red"))
+
+    # MACD 卡片
+    if latest_macd > latest_signal:
+        indicator_cards.append(("MACD 黃金交叉", "💰 買進訊號", "green"))
+    else:
+        indicator_cards.append(("MACD 死亡交叉", "⚠️ 賣出訊號", "red"))
+
+    # CCI 卡片
+    if latest_cci < -100:
+        indicator_cards.append(("CCI 過低", "🧊 可能超賣，買進訊號", "green"))
+    elif latest_cci > 100:
+        indicator_cards.append(("CCI 過高", "🔥 可能過買，賣出訊號", "red"))
+
+    # KD 卡片
+    if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
+        indicator_cards.append(("KD 黃金交叉", "💰 低檔交叉，買進訊號", "green"))
+    elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
+        indicator_cards.append(("KD 死亡交叉", "⚠️ 高檔交叉，賣出訊號", "red"))
+
+    for title, content, color in indicator_cards:
+        st.markdown(
+            f"""
+            <div style='
+                background-color: #f5f7fa;
+                border-left: 6px solid {color};
+                padding: 12px 16px;
+                margin-top: 6px;
+                margin-bottom: 6px;
+                border-radius: 8px;
+                font-size: 16px;
+                color: {color};
+            '>
+                <b>{title}</b><br>{content}
+            </div>
+            """, unsafe_allow_html=True
+        )
+
+    # 綜合評估卡片
+    signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     color = "green" if "買進" in overall else "red" if "賣出" in overall else "orange"
     st.markdown(f"<div style='font-size: 20px; font-weight: bold; background-color:#eef; padding:8px; border-radius:8px; color:{color};'>{overall}</div>", unsafe_allow_html=True)
     st.markdown("---")
