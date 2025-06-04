@@ -110,19 +110,25 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, bb_upper, bb_lower, bo
     else:
         result.append("布林通道：正常範圍")
 
-    if close >= box_high:
+    if close >= box_high.iloc[-1]:
         result.append("箱型區間：接近壓力位")
-    elif close <= box_low:
+    elif close <= box_low.iloc[-1]:
         result.append("箱型區間：接近支撐位")
     else:
         result.append("箱型區間：區間震盪")
 
-    if result.count("中性") <= 3 and any("黃金" in r or "強勢" in r for r in result):
+    # 綜合評估邏輯
+    neutral_count = sum("中性" in r for r in result)
+    buy_like = any("黃金" in r or "強勢" in r or "超賣" in r for r in result)
+    sell_like = any("死亡" in r or "弱勢" in r or "過熱" in r for r in result)
+
+    if neutral_count <= 3 and buy_like:
         overall = "🟢 綜合評估：可考慮買進"
-    elif result.count("中性") <= 3 and any("死亡" in r or "弱勢" in r for r in result):
+    elif neutral_count <= 3 and sell_like:
         overall = "🔴 綜合評估：建議觀望或賣出"
     else:
         overall = "🟡 綜合評估：中性，請觀察後續走勢"
+
     return result, overall
 
 def colorize(value, thresholds, colors):
@@ -133,4 +139,65 @@ def colorize(value, thresholds, colors):
     else:
         return colors[1]
 
-# 👉 UI 顯示邏輯會在資料下載與計算後加入
+# 主程式開始
+end = datetime.datetime.now()
+start = end - datetime.timedelta(days=90)
+
+for name, symbol in stock_list.items():
+    st.subheader(f"{name} ({symbol})")
+    data = yf.download(symbol, start=start, end=end, interval="1d")
+    if data.empty or len(data) < 30:
+        st.warning(f"{symbol} 資料不足或無法取得")
+        continue
+
+    data['RSI'] = calculate_rsi(data['Close'])
+    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+    data['CCI'] = calculate_cci(data)
+    data['%K'], data['%D'] = calculate_kd(data)
+    data['5MA'] = data['Close'].rolling(window=5).mean()
+    data['10MA'] = data['Close'].rolling(window=10).mean()
+    data['20MA'] = data['Close'].rolling(window=20).mean()
+    data['BB_Upper'], data['BB_Lower'] = calculate_bollinger_bands(data['Close'])
+    data['Box_High'], data['Box_Low'] = calculate_box_range(data['Close'])
+
+    latest = data.iloc[-1]
+
+    # 均線排列狀態
+    ma_trend = evaluate_ma_trend(latest['5MA'], latest['10MA'], latest['20MA'])
+
+    # 指標分析與綜合評估
+    signals, overall = evaluate_signals(
+        latest['RSI'], latest['MACD'], latest['Signal'], latest['CCI'], latest['%K'], latest['%D'],
+        latest['Close'], latest['BB_Upper'], latest['BB_Lower'], data['Box_High'], data['Box_Low']
+    )
+
+    # 兩欄顯示技術指標
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 📊 均線與動能指標")
+        st.write(f"• 5MA: {latest['5MA']:.2f}")
+        st.write(f"• 10MA: {latest['10MA']:.2f}")
+        st.write(f"• 20MA: {latest['20MA']:.2f}")
+        st.write(f"• RSI: {latest['RSI']:.2f}")
+        st.write(f"• MACD: {latest['MACD']:.4f}")
+        st.write(f"• Signal: {latest['Signal']:.4f}")
+        st.write(f"• CCI: {latest['CCI']:.2f}")
+        st.write(f"• KD %K: {latest['%K']:.2f}")
+        st.write(f"• KD %D: {latest['%D']:.2f}")
+
+    with col2:
+        st.markdown("### 📈 趨勢區間與價格帶")
+        st.write(f"• 布林通道上軌: {latest['BB_Upper']:.2f}")
+        st.write(f"• 布林通道下軌: {latest['BB_Lower']:.2f}")
+        st.write(f"• 箱型區間高點: {data['Box_High'].iloc[-1]:.2f}")
+        st.write(f"• 箱型區間低點: {data['Box_Low'].iloc[-1]:.2f}")
+
+    # 分析結果區塊，有底色與較大字體
+    st.markdown("### 🔍 指標分析")
+    for sig in signals:
+        st.markdown(f"<p style='background-color:#f0f0f5; font-size:18px; padding:6px; border-radius:4px;'>{sig}</p>", unsafe_allow_html=True)
+
+    st.markdown(f"<p style='background-color:#d1e7dd; font-size:20px; padding:8px; border-radius:6px; font-weight:bold;'>均線狀態：{ma_trend}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='background-color:#cfe2ff; font-size:20px; padding:8px; border-radius:6px; font-weight:bold;'>{overall}</p>", unsafe_allow_html=True)
+
+    st.markdown("---")
