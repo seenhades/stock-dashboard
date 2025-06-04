@@ -229,6 +229,8 @@ for name, symbol in stock_list.items():
         rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
     elif latest_rsi > 70:
         rsi_signal = "🔥 RSI過熱，可能過買，賣出訊號"
+    else:
+        rsi_signal = "🔄 RSI中性"
 
     macd_signal = ""
     if latest_macd > latest_signal:
@@ -241,12 +243,16 @@ for name, symbol in stock_list.items():
         cci_signal = "🧊 CCI過低，可能超賣，買進訊號"
     elif latest_cci > 100:
         cci_signal = "🔥 CCI過高，可能過買，賣出訊號"
+    else:
+        cci_signal = "🔄 CCI中性"
 
     kd_signal = ""
     if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
         kd_signal = "💰 KD低檔黃金交叉，買進訊號"
     elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
         kd_signal = "⚠️ KD高檔死亡交叉，賣出訊號"
+    else:
+        kd_signal = "🔄 KD中性"
 
     # 函式：產生卡片 HTML，圖示+文字同一行
     def render_card(icon, text, color):
@@ -276,14 +282,14 @@ for name, symbol in stock_list.items():
             return "orange"
 
     # 顯示卡片
-    st.markdown(render_card(f"RSI: {latest_rsi:.2f} - {rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
-    st.markdown(render_card(f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
-    st.markdown(render_card(f"CCI: {latest_cci:.2f} - {cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
-    st.markdown(render_card(f"KD: K={latest_k:.2f}, D={latest_d:.2f} - {kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📉", f"RSI: {latest_rsi:.2f} - {rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📈", f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📊", f"CCI: {latest_cci:.2f} - {cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("🎯", f"KD: K={latest_k:.2f}, D={latest_d:.2f} - {kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
 
     # 綜合評估
     signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     overall_color = get_color(overall_signal)
-    st.markdown(render_card(overall_signal, overall_color), unsafe_allow_html=True)
+    st.markdown(render_card("🟢", overall_signal, overall_color), unsafe_allow_html=True)
 
     st.markdown("---")
