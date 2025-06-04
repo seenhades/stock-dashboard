@@ -108,9 +108,10 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, bb_upper, bb_lower, bo
     else:
         result.append("箱型區間：區間震盪")
 
-    if result.count("中性") <= 3 and any("黃金" in r or "強勢" in r for r in result):
+    neutral_count = sum("中性" in r for r in result)
+    if neutral_count <= 3 and any("黃金" in r or "強勢" in r for r in result):
         overall = "🟢 綜合評估：可考慮買進"
-    elif result.count("中性") <= 3 and any("死亡" in r or "弱勢" in r for r in result):
+    elif neutral_count <= 3 and any("死亡" in r or "弱勢" in r for r in result):
         overall = "🔴 綜合評估：建議觀望或賣出"
     else:
         overall = "🟡 綜合評估：中性，請觀察後續走勢"
@@ -153,9 +154,25 @@ data['K'], data['D'] = calculate_kd(data)
 data['BB_upper'], data['BB_lower'] = calculate_bollinger_bands(data['Close'])
 data['Box_High'], data['Box_Low'] = calculate_box_range(data['Close'])
 
+# 把 NaN 用前一筆補齊（避免float轉換錯誤）
+data.fillna(method='ffill', inplace=True)
 latest = data.iloc[-1]
+
 ma_trend = evaluate_ma_trend(data['MA5'], data['MA10'], data['MA20'])
-signals, overall = evaluate_signals(latest['RSI'], latest['MACD'], latest['MACD_signal'], latest['CCI'], latest['K'], latest['D'], latest['Close'], latest['BB_upper'], latest['BB_lower'], latest['Box_High'], latest['Box_Low'])
+
+signals, overall = evaluate_signals(
+    float(latest['RSI']),
+    float(latest['MACD']),
+    float(latest['MACD_signal']),
+    float(latest['CCI']),
+    float(latest['K']),
+    float(latest['D']),
+    float(latest['Close']),
+    float(latest['BB_upper']),
+    float(latest['BB_lower']),
+    float(latest['Box_High']),
+    float(latest['Box_Low'])
+)
 
 st.markdown("## 📊 技術指標一覽")
 col1, col2 = st.columns(2)
@@ -179,6 +196,6 @@ with col2:
 st.markdown("### 📋 指標分析")
 st.markdown(f"- 均線排列：**{ma_trend}**")
 for s in signals:
-    st.markdown(f"- {s}", unsafe_allow_html=True)
+    st.markdown(f"- {s}")
 
 st.markdown(f"## 🧠 {overall}")
