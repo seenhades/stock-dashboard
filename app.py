@@ -248,23 +248,24 @@ for name, symbol in stock_list.items():
     elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
         indicator_cards.append(("KD 死亡交叉", "⚠️ 高檔交叉，賣出訊號", "red"))
 
-    for title, content, color in indicator_cards:
-        st.markdown(
-            f"""
-            <div style='
-                background-color: #f5f7fa;
-                border-left: 6px solid {color};
-                padding: 12px 16px;
-                margin-top: 6px;
-                margin-bottom: 6px;
-                border-radius: 8px;
-                font-size: 16px;
-                color: {color};
-            '>
-                <b>{title}</b><br>{content}
-            </div>
-            """, unsafe_allow_html=True
-        )
+for title, content, color in indicator_cards:
+    st.markdown(
+        f"""
+        <div style='
+            background-color: #f7f9fc;
+            border-left: 6px solid {color};
+            padding: 12px 16px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            color: {color};
+        '>
+            🟢 <b>{title}：</b>{content}
+        </div>
+        """, unsafe_allow_html=True
+    )
 
     # 綜合評估卡片
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
