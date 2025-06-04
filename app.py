@@ -52,14 +52,17 @@ def calculate_box_range(series, window=20):
     return box_high, box_low
 
 def evaluate_ma_trend(ma5, ma10, ma20):
-    if ma5 > ma10 > ma20:
-        return "多頭排列"
-    elif ma5 < ma10 < ma20:
-        return "空頭排列"
-    elif abs(ma5 - ma10) < 0.2 and abs(ma10 - ma20) < 0.2:
-        return "均線糾結"
-    else:
-        return "不明確"
+    try:
+        if ma5.iloc[-1] > ma10.iloc[-1] > ma20.iloc[-1]:
+            return "多頭排列"
+        elif ma5.iloc[-1] < ma10.iloc[-1] < ma20.iloc[-1]:
+            return "空頭排列"
+        elif abs(ma5.iloc[-1] - ma10.iloc[-1]) < 0.2 and abs(ma10.iloc[-1] - ma20.iloc[-1]) < 0.2:
+            return "均線糾結"
+        else:
+            return "不明確"
+    except:
+        return "資料不足"
 
 def evaluate_signals(rsi, macd, signal, cci, k, d, close, bb_upper, bb_lower, box_high, box_low):
     result = []
@@ -128,7 +131,6 @@ stock_list = {
     "Newmont (美股)": "NEM",
 }
 
-# 選股與資料
 selected_stock = st.selectbox("請選擇股票：", list(stock_list.keys()))
 ticker = stock_list[selected_stock]
 end_date = datetime.datetime.now()
@@ -136,61 +138,47 @@ start_date = end_date - datetime.timedelta(days=90)
 data = yf.download(ticker, start=start_date, end=end_date)
 data.dropna(inplace=True)
 
-# 指標計算
+if data.empty:
+    st.error("無法取得該股票資料，請稍後再試或選擇其他股票。")
+    st.stop()
+
+# 計算指標
 data['MA5'] = data['Close'].rolling(window=5).mean()
 data['MA10'] = data['Close'].rolling(window=10).mean()
 data['MA20'] = data['Close'].rolling(window=20).mean()
 data['RSI'] = calculate_rsi(data['Close'])
-data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+data['MACD'], data['MACD_signal'] = calculate_macd(data['Close'])
 data['CCI'] = calculate_cci(data)
 data['K'], data['D'] = calculate_kd(data)
 data['BB_upper'], data['BB_lower'] = calculate_bollinger_bands(data['Close'])
-data['Box_high'], data['Box_low'] = calculate_box_range(data['Close'])
+data['Box_High'], data['Box_Low'] = calculate_box_range(data['Close'])
 
 latest = data.iloc[-1]
-ma_trend = evaluate_ma_trend(latest['MA5'], latest['MA10'], latest['MA20'])
-results, overall = evaluate_signals(
-    latest['RSI'], latest['MACD'], latest['Signal'],
-    latest['CCI'], latest['K'], latest['D'],
-    latest['Close'], latest['BB_upper'], latest['BB_lower'],
-    latest['Box_high'], latest['Box_low']
-)
+ma_trend = evaluate_ma_trend(data['MA5'], data['MA10'], data['MA20'])
+signals, overall = evaluate_signals(latest['RSI'], latest['MACD'], latest['MACD_signal'], latest['CCI'], latest['K'], latest['D'], latest['Close'], latest['BB_upper'], latest['BB_lower'], latest['Box_High'], latest['Box_Low'])
 
-# 主題顏色（深色模式友善）
-def highlight_block(text, color="#2e2e2e"):
-    return f"<div style='background-color:{color}; padding:10px; border-radius:8px; margin:5px 0;'>{text}</div>"
-
-def bullet_item(label, value=None):
-    bold = f"<b>{label}</b>"
-    if value is not None:
-        return f"● {bold}：{value:.2f}"
-    return f"● {bold}"
-
-# 顯示資訊
+st.markdown("## 📊 技術指標一覽")
 col1, col2 = st.columns(2)
-
 with col1:
-    st.subheader("🧭 均線與動能指標")
-    st.markdown(bullet_item("5MA", latest['MA5']), unsafe_allow_html=True)
-    st.markdown(bullet_item("10MA", latest['MA10']), unsafe_allow_html=True)
-    st.markdown(bullet_item("20MA", latest['MA20']), unsafe_allow_html=True)
-    st.markdown(bullet_item("RSI", latest['RSI']), unsafe_allow_html=True)
-    st.markdown(bullet_item("MACD", latest['MACD']), unsafe_allow_html=True)
-    st.markdown(bullet_item("CCI", latest['CCI']), unsafe_allow_html=True)
-    st.markdown(bullet_item("KD K值", latest['K']), unsafe_allow_html=True)
-    st.markdown(bullet_item("KD D值", latest['D']), unsafe_allow_html=True)
+    st.markdown("### 📌 均線與動能指標")
+    st.markdown(f"- 🔹 5MA：{latest['MA5']:.2f}")
+    st.markdown(f"- 🔹 10MA：{latest['MA10']:.2f}")
+    st.markdown(f"- 🔹 20MA：{latest['MA20']:.2f}")
+    st.markdown(f"- 🔹 RSI：{latest['RSI']:.2f}")
+    st.markdown(f"- 🔹 MACD：{latest['MACD']:.2f} / Signal：{latest['MACD_signal']:.2f}")
+    st.markdown(f"- 🔹 CCI：{latest['CCI']:.2f}")
+    st.markdown(f"- 🔹 KD：K={latest['K']:.2f}, D={latest['D']:.2f}")
 
 with col2:
-    st.subheader("📊 趨勢區間與價格帶")
-    st.markdown(bullet_item("布林通道上軌", latest['BB_upper']), unsafe_allow_html=True)
-    st.markdown(bullet_item("布林通道下軌", latest['BB_lower']), unsafe_allow_html=True)
-    st.markdown(bullet_item("箱型區間高點", latest['Box_high']), unsafe_allow_html=True)
-    st.markdown(bullet_item("箱型區間低點", latest['Box_low']), unsafe_allow_html=True)
+    st.markdown("### 📌 趨勢區間與價格帶")
+    st.markdown(f"- 🔹 布林上軌：{latest['BB_upper']:.2f}")
+    st.markdown(f"- 🔹 布林下軌：{latest['BB_lower']:.2f}")
+    st.markdown(f"- 🔹 箱型區間上緣：{latest['Box_High']:.2f}")
+    st.markdown(f"- 🔹 箱型區間下緣：{latest['Box_Low']:.2f}")
 
-st.subheader("🔎 指標分析")
-st.markdown(highlight_block(f"<b>均線狀態：</b>{ma_trend}"), unsafe_allow_html=True)
-for item in results:
-    st.markdown(highlight_block(item), unsafe_allow_html=True)
+st.markdown("### 📋 指標分析")
+st.markdown(f"- 均線排列：**{ma_trend}**")
+for s in signals:
+    st.markdown(f"- {s}", unsafe_allow_html=True)
 
-st.subheader("📌 綜合評估")
-st.markdown(highlight_block(f"<b>{overall}</b>", color="#1f5f3f" if "🟢" in overall else ("#5f1f1f" if "🔴" in overall else "#444444")), unsafe_allow_html=True)
+st.markdown(f"## 🧠 {overall}")
