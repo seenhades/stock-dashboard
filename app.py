@@ -163,7 +163,10 @@ for name, symbol in stock_list.items():
 
     ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
 
+    try:
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+except Exception:
+    st.warning("最新收盤價資料不完整，無法顯示")
 
     col1, col2 = st.columns(2)
 
