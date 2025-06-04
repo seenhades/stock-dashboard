@@ -4,11 +4,9 @@ import datetime
 import numpy as np
 import pandas as pd
 
-# 頁面設定與標題
 st.set_page_config(layout="wide")
 st.title("📈 股票技術指標與收盤價監控（夜間版）")
 
-# 股票清單
 stock_list = {
     "Panasonic (日股)": "6752.T",
     "NTT (日股)": "9432.T",
@@ -23,13 +21,8 @@ stock_list = {
     "Newmont (美股)": "NEM",
 }
 
-# 下載資料時間範圍
 end = datetime.datetime.now()
 start = end - datetime.timedelta(days=90)
-
-# -----------------
-# 技術指標計算函數區塊
-# -----------------
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
@@ -130,10 +123,6 @@ def colorize_night(value, thresholds, colors):
         return colors[2]
     else:
         return colors[1]
-
-# -----------------
-# 主迴圈
-# -----------------
 
 for name, symbol in stock_list.items():
     st.subheader(f"{name} ({symbol})")
