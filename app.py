@@ -7,6 +7,58 @@ import pandas as pd
 st.set_page_config(layout="wide")
 st.title("📈 股票技術指標與收盤價監控")
 
+# 注入日夜模式CSS
+st.markdown(
+    """
+    <style>
+    /* 日間模式 */
+    @media (prefers-color-scheme: light) {
+        .reportview-container, .main {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .stMarkdown div {
+            color: #000000;
+        }
+        .indicator-box {
+            background-color: #f0f2f6;
+            color: #000000;
+            padding: 6px;
+            border-radius: 5px;
+        }
+        .overall-box {
+            background-color: #eef;
+            padding: 8px;
+            border-radius: 8px;
+        }
+    }
+
+    /* 夜間模式 */
+    @media (prefers-color-scheme: dark) {
+        .reportview-container, .main {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .stMarkdown div {
+            color: #e0e0e0;
+        }
+        .indicator-box {
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            padding: 6px;
+            border-radius: 5px;
+        }
+        .overall-box {
+            background-color: #222244;
+            padding: 8px;
+            border-radius: 8px;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 stock_list = {
     "Panasonic (日股)": "6752.T",
     "NTT (日股)": "9432.T",
@@ -197,8 +249,9 @@ for name, symbol in stock_list.items():
 
     signals, overall = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     for s in signals:
-        st.markdown(f"<div style='font-size: 18px; background-color:#f0f2f6; padding:6px; border-radius:5px;'>{s}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='indicator-box' style='font-size: 18px;'>{s}</div>", unsafe_allow_html=True)
 
     color = "green" if "買進" in overall else "red" if "賣出" in overall else "orange"
-    st.markdown(f"<div style='font-size: 20px; font-weight: bold; background-color:#eef; padding:8px; border-radius:8px; color:{color};'>{overall}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='overall-box' style='font-size: 20px; font-weight: bold; color:{color};'>{overall}</div>", unsafe_allow_html=True)
+
     st.markdown("---")
