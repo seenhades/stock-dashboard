@@ -15,6 +15,7 @@ stock_list = {
     "碧桂園(港股)": "2007.HK",
     "中糧家佳康(港股)": "1610.HK",
     "Shell (英股)": "SHEL.L",
+    "Rolls Royce (英股)": "RR.L",
     "Porsche SE (德股)": "PAH3.DE",
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
