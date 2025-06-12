@@ -262,7 +262,7 @@ for name, symbol in stock_list.items():
             border-left: 6px solid {color};
             padding: 12px 16px;
             margin: 8px 0;
-            font-size: 18px;
+            font-size: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
