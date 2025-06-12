@@ -20,6 +20,7 @@ stock_list = {
     "Infineon (德股)": "IFX.DE",
     "Organon (美股)": "OGN",
     "Newmont (美股)": "NEM",
+    "VanEck Gold ETF (美股)": "OUNZ",
 }
 
 end = datetime.datetime.now()
