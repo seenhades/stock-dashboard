@@ -215,7 +215,6 @@ for name, symbol in stock_list.items():
             align-items: center;
             gap: 12px;
         '>
-            <div>📈</div>
             <div style='color:{ma_color}; font-weight: 600;'>{ma_status}</div>
         </div>
         """,
