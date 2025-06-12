@@ -283,7 +283,8 @@ for name, symbol in stock_list.items():
 
     # 顯示卡片
     # st.markdown(render_card("📉", f"RSI: {latest_rsi:.2f} - {rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
-    # st.markdown(render_card("📈", f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📉", "", get_color(rsi_signal)), unsafe_allow_html=True)
+    st.markdown(render_card("📈", f"MACD: {latest_macd:.4f} (Signal: {latest_signal:.4f}) - {macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
     st.markdown(render_card("📊", f"CCI: {latest_cci:.2f} - {cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
     st.markdown(render_card("🎯", f"KD: K={latest_k:.2f}, D={latest_d:.2f} - {kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
 
