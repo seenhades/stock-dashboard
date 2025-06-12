@@ -285,7 +285,8 @@ for name, symbol in stock_list.items():
     if rsi_signal != "🔄 RSI中性":
         st.markdown(render_card("📉", f"{rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
     st.markdown(render_card("📈", f"{macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)#
-    st.markdown(render_card("📊", f"{cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
+    if cci_signal != "🔄 CCI中性":
+        st.markdown(render_card("📊", f"{cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
     st.markdown(render_card("🎯", f"{kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
 
     # 綜合評估
