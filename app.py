@@ -293,6 +293,6 @@ for name, symbol in stock_list.items():
     # 綜合評估
     signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     overall_color = get_color(overall_signal)
-    st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
+    st.markdown(render_card(overall_signal, overall_color), unsafe_allow_html=True)
 
     st.markdown("---")
