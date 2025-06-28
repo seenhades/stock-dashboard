@@ -293,7 +293,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 unsafe_allow_html=True,
             )
 
-            ma_color = (
+            ma_color_mid = (
                 "green" if "多頭" in ma_status else
                 "red" if "空頭" in ma_status else
                 "orange"
@@ -311,7 +311,7 @@ for tab, stocks in zip(tabs, stock_groups):
                     gap: 12px;
                 '>
                     <div> </div>
-                    <div style='color:{ma_color}; font-weight: 600;'>{ma_status_mid}</div>
+                    <div style='color:{ma_color_mid}; font-weight: 600;'>{ma_status_mid}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
