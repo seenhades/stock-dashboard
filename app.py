@@ -28,7 +28,7 @@ stock_list = {
 }
 
 end = datetime.datetime.now()
-start = end - datetime.timedelta(days=250)
+start = end - datetime.timedelta(days=90)
 
 # === 指標計算函式 ===
 def calculate_rsi(series, period=14):
@@ -200,8 +200,6 @@ for tab, stocks in zip(tabs, stock_groups):
             data['5MA'] = data['Close'].rolling(window=5).mean()
             data['10MA'] = data['Close'].rolling(window=10).mean()
             data['20MA'] = data['Close'].rolling(window=20).mean()
-            data['60MA'] = data['Close'].rolling(window=60).mean()
-            data['120MA'] = data['Close'].rolling(window=120).mean()
             data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
             data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
 
@@ -215,8 +213,6 @@ for tab, stocks in zip(tabs, stock_groups):
             latest_5ma = data['5MA'].iloc[-1]
             latest_10ma = data['10MA'].iloc[-1]
             latest_20ma = data['20MA'].iloc[-1]
-            latest_60ma = data['60MA'].iloc[-1]
-            latest_120ma = data['120MA'].iloc[-1]
             latest_upperbb = data['UpperBB'].iloc[-1]
             latest_lowerbb = data['LowerBB'].iloc[-1]
             latest_boxhigh = data['BoxHigh'].iloc[-1]
@@ -225,8 +221,7 @@ for tab, stocks in zip(tabs, stock_groups):
             if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
                 latest_boxhigh = latest_boxlow = None
 
-            ma_status_short = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-            ma_status_mid = evaluate_ma_trend(latest_20ma, latest_60ma, latest_120ma)
+            ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
 
             st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
@@ -234,7 +229,6 @@ for tab, stocks in zip(tabs, stock_groups):
             with col1:
                 st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
                 st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
 
                 rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
                 st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
