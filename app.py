@@ -233,8 +233,8 @@ for tab, stocks in zip(tabs, stock_groups):
             if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
                 latest_boxhigh = latest_boxlow = None
 
-            ma_status_short = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-            ma_status_mid = evaluate_ma_trend(latest_20ma, latest_60ma, latest_120ma)
+            ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
+            ma_status = evaluate_ma_trend(latest_20ma, latest_60ma, latest_120ma)
 
             st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
@@ -270,8 +270,8 @@ for tab, stocks in zip(tabs, stock_groups):
                     st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
             ma_color = (
-                "green" if "多頭" in ma_status_mid else
-                "red" if "空頭" in ma_status_mid else
+                "green" if "多頭" in ma_status else
+                "red" if "空頭" in ma_status else
                 "orange"
             )
             st.markdown(
