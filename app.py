@@ -330,22 +330,26 @@ for name, symbol in stock_list.items():
         st.markdown(render_card("", f"{cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
     if kd_signal != "🔄 KD中性":
         st.markdown(render_card("", f"{kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
+    
+    # 綜合評估
+    signals_list, overall_signal = evaluate_signals(
+        latest_rsi, latest_macd, latest_signal,
+        latest_cci, latest_k, latest_d,
+        latest_close, latest_upperbb, latest_lowerbb,
+        latest_boxhigh, latest_boxlow
+)
+    overall_color = get_color(overall_signal)
+    st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
+
+    # ➤ 加入布林通道與箱型突破卡片（略過中性訊號）
     bollinger_box_signals = evaluate_bollinger_box(
-        latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
-    )
+        latest_close, latest_upperbb, latest_lowerbb,
+        latest_boxhigh, latest_boxlow
+)
     for signal in bollinger_box_signals:
         if "📊" in signal:
             continue  # 略過中性訊號
         color = get_color(signal)
-    st.markdown(render_card("", signal, color), unsafe_allow_html=True)
-    
-    # 綜合評估
-    signals_list, overall_signal = evaluate_signals(
-    latest_rsi, latest_macd, latest_signal,
-    latest_cci, latest_k, latest_d,
-    latest_close, latest_upperbb, latest_lowerbb,
-    latest_boxhigh, latest_boxlow
-)
-    overall_color = get_color(overall_signal)
-    st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
+        st.markdown(render_card("", signal, color), unsafe_allow_html=True)
+
     st.markdown("---")
