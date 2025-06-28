@@ -337,6 +337,8 @@ for tab, stocks in zip(tabs, stock_groups):
             )
 
             cards = []
+            ma_cross_short = evaluate_ma_cross(ma5, ma20, "5/20MA ")
+            ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
             if "中性" not in ma_cross_short:
                 cards.append((ma_cross_short, get_color(ma_cross_short)))
             if "中性" not in ma_cross_mid:
