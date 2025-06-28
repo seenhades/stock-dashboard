@@ -226,13 +226,13 @@ for tab, stocks in zip(tabs, stock_groups):
                 st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
                 st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
 
-                rsi_color = colorize(latest_rsi, [30, 70], ["green", "orange", "red"])
+                rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
                 st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
 
                 macd_color = "green" if latest_macd > latest_signal else "red"
                 st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
 
-                cci_color = colorize(latest_cci, [-100, 100], ["green", "orange", "red"])
+                cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
                 st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
 
                 if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
@@ -240,7 +240,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
                     kd_color = "red"
                 else:
-                    kd_color = "orange"
+                    kd_color = "unsafe_allow_html=True"
                 st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
 
             with col2:
