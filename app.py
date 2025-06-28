@@ -330,7 +330,7 @@ for name, symbol in stock_list.items():
         st.markdown(render_card("", f"{cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
     if kd_signal != "🔄 KD中性":
         st.markdown(render_card("", f"{kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
-    if bollinger_box_signals != ("📊 價格在布林通道內", "📊 價格在箱型區間內")
+    if bollinger_box_signals != ("📊 價格在布林通道內", "📊 價格在箱型區間內"):
     bollinger_box_signals = evaluate_bollinger_box(
         latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
     )
