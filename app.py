@@ -294,8 +294,8 @@ for tab, stocks in zip(tabs, stock_groups):
             )
 
             ma_color_mid = (
-                "green" if "多頭" in ma_status else
-                "red" if "空頭" in ma_status else
+                "green" if "多頭" in ma_status_mid else
+                "red" if "空頭" in ma_status_mid else
                 "orange"
             )
             st.markdown(
