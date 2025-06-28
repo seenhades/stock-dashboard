@@ -117,7 +117,7 @@ def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
     else:
         return f"🔄 {label}均線重合，中性觀望"
 
-def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow, ma5, ma20, ma60):
+def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
 
     # 均線交叉訊號
