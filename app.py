@@ -104,7 +104,7 @@ def evaluate_ma_trend(ma5, ma10, ma20):
 def evaluate_ma_trend(ma20, ma60, ma120):
     if ma20 > ma60 > ma120:
         return "📈 均線呈多頭排列"
-    elif ma25 < ma60 < ma120:
+    elif ma20 < ma60 < ma120:
         return "📉 均線呈空頭排列"
     else:
         return "🔄 均線呈糾結狀態"
