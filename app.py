@@ -97,25 +97,46 @@ def evaluate_ma_trend(ma5, ma10, ma20):
     else:
         return "🔄 均線呈糾結狀態"
 
-def evaluate_signals(rsi, macd, signal, cci, k, d):
+def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
+
+    # RSI 訊號
     if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
+
+    # MACD 訊號
     if macd > signal:
         signals.append("💰 MACD黃金交叉，買進訊號")
     else:
         signals.append("⚠️ MACD死亡交叉，賣出訊號")
+
+    # CCI 訊號
     if cci < -100:
         signals.append("🧊 CCI過低，可能超賣，買進訊號")
     elif cci > 100:
         signals.append("🔥 CCI過高，可能過買，賣出訊號")
+
+    # KD 訊號
     if k < 20 and d < 20 and k > d:
         signals.append("💰 KD低檔黃金交叉，買進訊號")
     elif k > 80 and d > 80 and k < d:
         signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
+    # 布林通道
+    if close > upperbb:
+        signals.append("💡 突破布林上軌，可能過熱，賣出訊號")
+    elif close < lowerbb:
+        signals.append("⚠️ 跌破布林下軌，可能轉弱，賣出訊號")
+
+    # 箱型區間
+    if pd.notna(boxhigh) and close > boxhigh:
+        signals.append("💡 突破箱型上緣，買進訊號")
+    elif pd.notna(boxlow) and close < boxlow:
+        signals.append("⚠️ 跌破箱型下緣，賣出訊號")
+
+    # 綜合評估
     buy_signals = sum(1 for s in signals if "買進" in s)
     sell_signals = sum(1 for s in signals if "賣出" in s)
     if buy_signals > sell_signals:
@@ -311,7 +332,12 @@ for name, symbol in stock_list.items():
         st.markdown(render_card("", f"{kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
 
     # 綜合評估
-    signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
+    signals_list, overall_signal = evaluate_signals(
+    latest_rsi, latest_macd, latest_signal,
+    latest_cci, latest_k, latest_d,
+    latest_close, latest_upperbb, latest_lowerbb,
+    latest_boxhigh, latest_boxlow
+)
     overall_color = get_color(overall_signal)
     bollinger_box_signals = evaluate_bollinger_box(
         latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
