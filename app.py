@@ -125,9 +125,9 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
     ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
     
     if "中性" not in ma_cross_short:
-        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
+        signals.append(ma_cross_short)
     if "中性" not in ma_cross_mid:
-        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
+        signals.append(ma_cross_mid)
 
     # RSI 訊號
     if rsi < 20:
@@ -175,7 +175,7 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
     else:
         overall = "🟠 綜合評估：持有"
 
-    return signals, overall
+    return signals, overall, ma_cross_short, ma_cross_mid
 
 
 def colorize(value, thresholds, colors):
@@ -335,7 +335,13 @@ for tab, stocks in zip(tabs, stock_groups):
                 """,
                 unsafe_allow_html=True,
             )
-    
+
+            cards = []
+            if "中性" not in ma_cross_short:
+                cards.append((ma_cross_short, get_color(ma_cross_short)))
+            if "中性" not in ma_cross_mid:
+                cards.append((ma_cross_mid, get_color(ma_cross_mid)))
+                
             rsi_signal = ""
             if latest_rsi < 20:
                 rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
