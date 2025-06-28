@@ -109,56 +109,48 @@ def evaluate_ma_trend_mid(ma20, ma60, ma120):
     else:
         return "🔄 中期均線呈糾結狀態"
 
-def get_ma_cross_signal(short_ma, long_ma, label=""):
-    if short_ma > long_ma:
-        return f"💰 {label}黃金交叉，買進訊號"
-    elif short_ma < long_ma:
-        return f"⚠️ {label}死亡交叉，賣出訊號"
-    else:
-        return f"🔄 {label}均線重合，中性觀望"
-
-def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow,
-                     ma5, ma20, ma60):
+def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
-    ma_cross_short = get_ma_cross_signal(ma5, ma20, "5/20MA ")
-    ma_cross_mid = get_ma_cross_signal(ma20, ma60, "20/60MA ")
-    
-    signals.append(ma_cross_short)
-    signals.append(ma_cross_mid)
 
+    # RSI 訊號
     if rsi < 20:
-        signals.append("🧊 RSI過凍，可能超賣，買進訊號")
+        signals.append("🧊 RSI過冷，可能超賣，買進訊號")
     elif rsi > 70:
         signals.append("🔥 RSI過熱，可能過買，賣出訊號")
 
+    # MACD 訊號
     if macd > signal:
         signals.append("💰 MACD黃金交叉，買進訊號")
     else:
         signals.append("⚠️ MACD死亡交叉，賣出訊號")
 
+    # CCI 訊號
     if cci < -100:
         signals.append("🧊 CCI過低，可能超賣，買進訊號")
     elif cci > 100:
         signals.append("🔥 CCI過高，可能過買，賣出訊號")
 
+    # KD 訊號
     if k < 20 and d < 20 and k > d:
-        signals.append("💰 KD低段黃金交叉，買進訊號")
+        signals.append("💰 KD低檔黃金交叉，買進訊號")
     elif k > 80 and d > 80 and k < d:
-        signals.append("⚠️ KD高段死亡交叉，賣出訊號")
+        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
+    # 布林通道
     if close > upperbb:
-        signals.append("🔑 突破布林林上軀，可能過熱，賣出訊號")
+        signals.append("💡 突破布林上軌，可能過熱，賣出訊號")
     elif close < lowerbb:
-        signals.append("⚠️ 跌破布林林下軀，可能轉弱，賣出訊號")
+        signals.append("⚠️ 跌破布林下軌，可能轉弱，賣出訊號")
 
+    # 箱型區間
     if pd.notna(boxhigh) and close > boxhigh:
-        signals.append("🔑 突破箱型上緣，買進訊號")
+        signals.append("💡 突破箱型上緣，買進訊號")
     elif pd.notna(boxlow) and close < boxlow:
         signals.append("⚠️ 跌破箱型下緣，賣出訊號")
 
+    # 綜合評估
     buy_signals = sum(1 for s in signals if "買進" in s)
     sell_signals = sum(1 for s in signals if "賣出" in s)
-
     if buy_signals > sell_signals:
         overall = "🟢 綜合評估：買進"
     elif sell_signals > buy_signals:
@@ -167,7 +159,6 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxh
         overall = "🟠 綜合評估：持有"
 
     return signals, overall
-
 
 def colorize(value, thresholds, colors):
     if value < thresholds[0]:
@@ -244,8 +235,6 @@ for tab, stocks in zip(tabs, stock_groups):
 
             ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
             ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
-            ma_cross_short = ma_cross_signal(latest_5ma, latest_20ma, "5/20MA ")
-            ma_cross_mid = ma_cross_signal(latest_20ma, latest_60ma, "20/60MA ")
 
             st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
@@ -329,11 +318,6 @@ for tab, stocks in zip(tabs, stock_groups):
             )
 
             # 指標訊號卡片
-            if "中性" not in ma_cross_short:
-                st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
-            if "中性" not in ma_cross_mid:
-                st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
-            
             rsi_signal = ""
             if latest_rsi < 20:
                 rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
