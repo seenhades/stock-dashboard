@@ -152,7 +152,7 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxh
     buy_signals = sum(1 for s in signals if "買進" in s)
     sell_signals = sum(1 for s in signals if "賣出" in s)
     if buy_signals > sell_signals:
-        overall = "🔵 綜合評估：買進"
+        overall = "🟢 綜合評估：買進"
     elif sell_signals > buy_signals:
         overall = "🔴 綜合評估：賣出"
     else:
