@@ -78,16 +78,16 @@ def calculate_box_range(series, period=20):
 def evaluate_bollinger_box(close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
     if close > upperbb:
-        signals.append("💡 突破布林上軌，可能進入強勢區")
+        signals.append("💡 突破布林上軌，可能進入強勢區，須注意過熱，買進訊號")
     elif close < lowerbb:
-        signals.append("⚠ 跌破布林下軌，可能轉弱")
+        signals.append("⚠ 跌破布林下軌，可能轉弱，參考RSI，賣出訊號")
     else:
         signals.append("📊 價格在布林通道內")
 
     if pd.notna(boxhigh) and close > boxhigh:
-        signals.append("💡 突破箱型上緣")
+        signals.append("💡 突破箱型上緣，買進訊號")
     elif pd.notna(boxlow) and close < boxlow:
-        signals.append("⚠ 跌破箱型下緣")
+        signals.append("⚠ 跌破箱型下緣，賣出訊號")
     else:
         signals.append("📊 價格在箱型區間內")
 
@@ -155,9 +155,9 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
 
     # 布林通道訊號
     if close > upperbb:
-        signals.append("💡 突破布林上軌，可能過熱，賣出訊號")
+        signals.append("💡 突破布林上軌，可能進入強勢區，須注意過熱，買進訊號")
     elif close < lowerbb:
-        signals.append("⚠️ 跌破布林下軌，可能轉弱，賣出訊號")
+        signals.append("⚠️ 跌破布林下軌，可能轉弱，參考RSI，賣出訊號")
 
     # 箱型訊號
     if pd.notna(boxhigh) and close > boxhigh:
