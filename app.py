@@ -59,6 +59,18 @@ def calculate_kd(data, k_period=9, d_period=3):
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
+def calculate_bollinger_bands(series, window=20, num_std=2):
+    sma = series.rolling(window).mean()
+    std = series.rolling(window).std()
+    upper_band = sma + num_std * std
+    lower_band = sma - num_std * std
+    return upper_band, lower_band
+
+def calculate_box_range(series, period=20):
+    upper = series.rolling(window=period).max()
+    lower = series.rolling(window=period).min()
+    return upper, lower
+    
 def evaluate_bollinger_box(close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
     if close > upperbb:
@@ -303,9 +315,9 @@ for name, symbol in stock_list.items():
     overall_color = get_color(overall_signal)
     st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
     bollinger_box_signals = evaluate_bollinger_box(
-    latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
+        latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
     )
     for signal in bollinger_box_signals:
-    color = get_color(signal)
-    st.markdown(render_card("", signal, color), unsafe_allow_html=True)
+        color = get_color(signal)
+        st.markdown(render_card("", signal, color), unsafe_allow_html=True)
     st.markdown("---")
