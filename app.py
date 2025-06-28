@@ -120,14 +120,9 @@ def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
 def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
 
-    # 均線交叉訊號
+    # 均線交叉訊號（不加入 signals，單獨處理）
     ma_cross_short = evaluate_ma_cross(ma5, ma20, "5/20MA ")
     ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
-    
-    if "中性" not in ma_cross_short:
-        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
-    if "中性" not in ma_cross_mid:
-        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
 
     # RSI 訊號
     if rsi < 20:
@@ -165,9 +160,19 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
     elif pd.notna(boxlow) and close < boxlow:
         signals.append("⚠️ 跌破箱型下緣，賣出訊號")
 
+    # 印出全部訊號，確認字串正確性
+    print("Signals collected:")
+    for s in signals:
+        print(f"- {s}")
+
+    # 計算買進和賣出訊號數量
+    buy_signals = sum("買進" in s for s in signals)
+    sell_signals = sum("賣出" in s for s in signals)
+
+    print(f"Buy signals count: {buy_signals}")
+    print(f"Sell signals count: {sell_signals}")
+
     # 綜合評估
-    buy_signals = sum(1 for s in signals if "買進" in s)
-    sell_signals = sum(1 for s in signals if "賣出" in s)
     if buy_signals > sell_signals:
         overall = "🟢 綜合評估：買進"
     elif sell_signals > buy_signals:
@@ -175,7 +180,9 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
     else:
         overall = "🟠 綜合評估：持有"
 
-    return signals, overall
+    print(f"Overall evaluation: {overall}")
+
+    return signals, overall, ma_cross_short, ma_cross_mid
 
 
 def colorize(value, thresholds, colors):
