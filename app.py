@@ -313,11 +313,11 @@ for name, symbol in stock_list.items():
     # 綜合評估
     signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     overall_color = get_color(overall_signal)
-    st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
     bollinger_box_signals = evaluate_bollinger_box(
         latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
     )
     for signal in bollinger_box_signals:
         color = get_color(signal)
         st.markdown(render_card("", signal, color), unsafe_allow_html=True)
+    st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
     st.markdown("---")
