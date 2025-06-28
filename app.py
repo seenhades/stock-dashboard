@@ -419,4 +419,6 @@ for tab, stocks in zip(tabs, stock_groups):
             overall_color = get_color(overall_signal)
             st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
 
+        print("signals:", signals)
+            
             st.markdown("---")
