@@ -120,9 +120,14 @@ def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
 def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
 
-    # 均線交叉訊號（不顯示，只回傳）
+    # 均線交叉訊號
     ma_cross_short = evaluate_ma_cross(ma5, ma20, "5/20MA ")
     ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
+    
+    if "中性" not in ma_cross_short:
+        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
+    if "中性" not in ma_cross_mid:
+        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
 
     # RSI 訊號
     if rsi < 20:
@@ -170,7 +175,8 @@ def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upper
     else:
         overall = "🟠 綜合評估：持有"
 
-    return signals, overall, ma_cross_short, ma_cross_mid
+    return signals, overall
+
 
 def colorize(value, thresholds, colors):
     if value < thresholds[0]:
@@ -403,39 +409,13 @@ for tab, stocks in zip(tabs, stock_groups):
                 color = get_color(signal)
                 st.markdown(render_card("", signal, color), unsafe_allow_html=True)
 
-            signals_list, overall_signal, ma_cross_short, ma_cross_mid = evaluate_signals(
+            signals_list, overall_signal = evaluate_signals(
                 latest_5ma, latest_20ma, latest_60ma,
                 latest_rsi, latest_macd, latest_signal,
                 latest_cci, latest_k, latest_d,
                 latest_close, latest_upperbb, latest_lowerbb,
                 latest_boxhigh, latest_boxlow,
             )
-
-        # 組合卡片順序（均線交叉放在最前）
-            cards = []
-
-            if "中性" not in ma_cross_short:
-                cards.append((ma_cross_short, get_color(ma_cross_short)))
-            if "中性" not in ma_cross_mid:
-                cards.append((ma_cross_mid, get_color(ma_cross_mid)))
-
-            if rsi_signal != "🔄 RSI中性":
-                cards.append((rsi_signal, get_color(rsi_signal)))
-            cards.append((macd_signal, get_color(macd_signal)))
-            if cci_signal != "🔄 CCI中性":
-                cards.append((cci_signal, get_color(cci_signal)))
-            if kd_signal != "🔄 KD中性":
-                cards.append((kd_signal, get_color(kd_signal)))
-            
-            for signal in bollinger_box_signals:
-                if "📊" not in signal:
-                    cards.append((signal, get_color(signal)))
-        
-        cards.append((overall_signal, get_color(overall_signal)))
-        
-        # 顯示所有卡片
-        for text, color in cards:
-            st.markdown(render_card("", text, color), unsafe_allow_html=True)
             overall_color = get_color(overall_signal)
             st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
 
