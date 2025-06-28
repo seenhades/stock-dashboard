@@ -413,7 +413,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 latest_rsi, latest_macd, latest_signal,
                 latest_cci, latest_k, latest_d,
                 latest_close, latest_upperbb, latest_lowerbb,
-                latest_boxhigh, latest_boxlow
+                latest_boxhigh, latest_boxlow,
                 latest_5ma, latest_20ma, latest_60ma
             )
             overall_color = get_color(overall_signal)
