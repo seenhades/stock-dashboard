@@ -270,8 +270,8 @@ for tab, stocks in zip(tabs, stock_groups):
                     st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
             ma_color = (
-                "green" if "多頭" in ma_status else
-                "red" if "空頭" in ma_status else
+                "green" if "多頭" in ma_status_mid else
+                "red" if "空頭" in ma_status_mid else
                 "orange"
             )
             st.markdown(
