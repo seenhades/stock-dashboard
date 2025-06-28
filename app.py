@@ -109,9 +109,21 @@ def evaluate_ma_trend_mid(ma20, ma60, ma120):
     else:
         return "🔄 中期均線呈糾結狀態"
 
+def evaluate_ma_cross(ma_short, ma_long, label=""):
+    if ma_short > ma_long:
+        return f"💰 {label}黃金交叉，買進訊號"
+    elif ma_short < ma_long:
+        return f"⚠️ {label}死亡交叉，賣出訊號"
+    else:
+        return f"🔄 {label}均線重合，中性觀望"
+
 def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
 
+    # 均線 訊號
+    ma_cross_short = evaluate_ma_cross(latest_5ma, latest_20ma, "5/20MA ")
+    ma_cross_mid = evaluate_ma_cross(latest_20ma, latest_60ma, "20/60MA ")
+    
     # RSI 訊號
     if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
@@ -318,6 +330,11 @@ for tab, stocks in zip(tabs, stock_groups):
             )
 
             # 指標訊號卡片
+            if "中性" not in ma_cross_short:
+                st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
+            if "中性" not in ma_cross_mid:
+                st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
+            
             rsi_signal = ""
             if latest_rsi < 20:
                 rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
