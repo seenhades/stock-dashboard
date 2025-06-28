@@ -95,19 +95,19 @@ def evaluate_bollinger_box(close, upperbb, lowerbb, boxhigh, boxlow):
 
 def evaluate_ma_trend(ma5, ma10, ma20):
     if ma5 > ma10 > ma20:
-        return "📈 均線呈多頭排列"
+        return "📈 短期均線呈多頭排列"
     elif ma5 < ma10 < ma20:
-        return "📉 均線呈空頭排列"
+        return "📉 短期均線呈空頭排列"
     else:
-        return "🔄 均線呈糾結狀態"
+        return "🔄 短期均線呈糾結狀態"
 
-def evaluate_ma_trend(ma20, ma60, ma120):
+def evaluate_ma_trend_mid(ma20, ma60, ma120):
     if ma20 > ma60 > ma120:
-        return "📈 均線呈多頭排列"
+        return "📈 中期均線呈多頭排列"
     elif ma20 < ma60 < ma120:
-        return "📉 均線呈空頭排列"
+        return "📉 中期均線呈空頭排列"
     else:
-        return "🔄 均線呈糾結狀態"
+        return "🔄 中期均線呈糾結狀態"
 
 def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
     signals = []
@@ -234,7 +234,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 latest_boxhigh = latest_boxlow = None
 
             ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-            ma_status = evaluate_ma_trend(latest_20ma, latest_60ma, latest_120ma)
+            ma_status_mid = evaluate_ma_trend(latest_20ma, latest_60ma, latest_120ma)
 
             st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
@@ -288,6 +288,30 @@ for tab, stocks in zip(tabs, stock_groups):
                 '>
                     <div> </div>
                     <div style='color:{ma_color}; font-weight: 600;'>{ma_status}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+                        ma_color = (
+                "green" if "多頭" in ma_status else
+                "red" if "空頭" in ma_status else
+                "orange"
+            )
+            st.markdown(
+                f"""
+                <div style='
+                    background-color: #f7f9fc;
+                    border-left: 6px solid {ma_color};
+                    padding: 12px 16px;
+                    margin: 12px 0;
+                    font-size: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                '>
+                    <div> </div>
+                    <div style='color:{ma_color}; font-weight: 600;'>{ma_status_mid}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
