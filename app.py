@@ -125,9 +125,9 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxh
     ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
     
     if "中性" not in ma_cross_short:
-        signals.append(ma_cross_short)
+        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
     if "中性" not in ma_cross_mid:
-        signals.append(ma_cross_mid)
+        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
 
     # RSI 訊號
     if rsi < 20:
