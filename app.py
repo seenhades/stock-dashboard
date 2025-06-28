@@ -157,12 +157,13 @@ def colorize(value, thresholds, colors):
         return colors[1]
 
 # === 將股票依國家分類 ===
-tw_stocks = {k: v for k, v in stock_list.items() if v.endswith(".TW")}
-us_stocks = {k: v for k, v in stock_list.items() if "." not in v}  # 無副檔名假設為美股
-uk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".L")}
 jp_stocks = {k: v for k, v in stock_list.items() if v.endswith(".T")}
+tw_stocks = {k: v for k, v in stock_list.items() if v.endswith(".TW")}
 hk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".HK")}
+uk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".L")}
 de_stocks = {k: v for k, v in stock_list.items() if v.endswith(".DE")}
+us_stocks = {k: v for k, v in stock_list.items() if "." not in v}  # 無副檔名假設為美股
+
 
 tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
 stock_groups = [tw_stocks, us_stocks, uk_stocks, jp_stocks, hk_stocks, de_stocks]
