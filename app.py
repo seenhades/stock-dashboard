@@ -109,10 +109,10 @@ def evaluate_ma_trend_mid(ma20, ma60, ma120):
     else:
         return "🔄 中期均線呈糾結狀態"
 
-def evaluate_ma_cross(ma_short, ma_long, label=""):
-    if ma_short > ma_long:
+def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
+    if ma_cross_short > ma_cross_mid:
         return f"💰 {label}黃金交叉，買進訊號"
-    elif ma_short < ma_long:
+    elif ma_cross_short < ma_cross_mid:
         return f"⚠️ {label}死亡交叉，賣出訊號"
     else:
         return f"🔄 {label}均線重合，中性觀望"
