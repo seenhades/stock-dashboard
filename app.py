@@ -117,17 +117,18 @@ def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
     else:
         return f"🔄 {label}均線重合，中性觀望"
 
-def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
+def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow, ma5, ma20, ma60):
     signals = []
 
-    # MA 訊號
-    ma_cross_short = evaluate_ma_cross(latest_5ma, latest_20ma, "5/20MA ")
-    ma_cross_mid = evaluate_ma_cross(latest_20ma, latest_60ma, "20/60MA ")
-    if "中性" not in ma_cross_short:
-        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
-    if "中性" not in ma_cross_mid:
-        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
+    # 均線交叉訊號
+    ma_cross_short = evaluate_ma_cross(ma5, ma20, "5/20MA ")
+    ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
     
+    if "中性" not in ma_cross_short:
+        signals.append(ma_cross_short)
+    if "中性" not in ma_cross_mid:
+        signals.append(ma_cross_mid)
+
     # RSI 訊號
     if rsi < 20:
         signals.append("🧊 RSI過冷，可能超賣，買進訊號")
@@ -152,13 +153,13 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxh
     elif k > 80 and d > 80 and k < d:
         signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
 
-    # 布林通道
+    # 布林通道訊號
     if close > upperbb:
         signals.append("💡 突破布林上軌，可能過熱，賣出訊號")
     elif close < lowerbb:
         signals.append("⚠️ 跌破布林下軌，可能轉弱，賣出訊號")
 
-    # 箱型區間
+    # 箱型訊號
     if pd.notna(boxhigh) and close > boxhigh:
         signals.append("💡 突破箱型上緣，買進訊號")
     elif pd.notna(boxlow) and close < boxlow:
@@ -175,6 +176,7 @@ def evaluate_signals(rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxh
         overall = "🟠 綜合評估：持有"
 
     return signals, overall
+
 
 def colorize(value, thresholds, colors):
     if value < thresholds[0]:
