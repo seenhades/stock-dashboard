@@ -247,6 +247,8 @@ for tab, stocks in zip(tabs, stock_groups):
 
             ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
             ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
+            ma_cross_short = evaluate_ma_cross(latest_5ma, latest_20ma, "5/20MA ")
+            ma_cross_mid = evaluate_ma_cross(latest_20ma, latest_60ma, "20/60MA ")
 
             st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
