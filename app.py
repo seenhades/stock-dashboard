@@ -166,7 +166,7 @@ us_stocks = {k: v for k, v in stock_list.items() if "." not in v}  # 無副檔�
 
 
 tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
-stock_groups = [tw_stocks, us_stocks, uk_stocks, jp_stocks, hk_stocks, de_stocks]
+stock_groups = [jp_stocks, tw_stocks, hk_stocks, uk_stocks, de_stocks, us_stocks]
 
 for tab, stocks in zip(tabs, stock_groups):
     with tab:
