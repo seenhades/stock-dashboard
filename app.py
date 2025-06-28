@@ -410,11 +410,11 @@ for tab, stocks in zip(tabs, stock_groups):
                 st.markdown(render_card("", signal, color), unsafe_allow_html=True)
 
             signals_list, overall_signal = evaluate_signals(
+                latest_5ma, latest_20ma, latest_60ma,
                 latest_rsi, latest_macd, latest_signal,
                 latest_cci, latest_k, latest_d,
                 latest_close, latest_upperbb, latest_lowerbb,
                 latest_boxhigh, latest_boxlow,
-                latest_5ma, latest_20ma, latest_60ma
             )
             overall_color = get_color(overall_signal)
             st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
