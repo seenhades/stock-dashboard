@@ -59,17 +59,23 @@ def calculate_kd(data, k_period=9, d_period=3):
     d = k.ewm(com=d_period-1, adjust=False).mean()
     return k, d
 
-def calculate_bollinger_bands(series, window=20, num_std=2):
-    sma = series.rolling(window).mean()
-    std = series.rolling(window).std()
-    upper_band = sma + num_std * std
-    lower_band = sma - num_std * std
-    return upper_band, lower_band
+def evaluate_bollinger_box(close, upperbb, lowerbb, boxhigh, boxlow):
+    signals = []
+    if close > upperbb:
+        signals.append("💡 突破布林上軌，可能進入強勢區")
+    elif close < lowerbb:
+        signals.append("⚠ 跌破布林下軌，可能轉弱")
+    else:
+        signals.append("📊 價格在布林通道內")
 
-def calculate_box_range(series, period=20):
-    upper = series.rolling(window=period).max()
-    lower = series.rolling(window=period).min()
-    return upper, lower
+    if pd.notna(boxhigh) and close > boxhigh:
+        signals.append("💡 突破箱型上緣")
+    elif pd.notna(boxlow) and close < boxlow:
+        signals.append("⚠ 跌破箱型下緣")
+    else:
+        signals.append("📊 價格在箱型區間內")
+
+    return signals
 
 def evaluate_ma_trend(ma5, ma10, ma20):
     if ma5 > ma10 > ma20:
@@ -296,5 +302,10 @@ for name, symbol in stock_list.items():
     signals_list, overall_signal = evaluate_signals(latest_rsi, latest_macd, latest_signal, latest_cci, latest_k, latest_d)
     overall_color = get_color(overall_signal)
     st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
-
+    bollinger_box_signals = evaluate_bollinger_box(
+    latest_close, latest_upperbb, latest_lowerbb, latest_boxhigh, latest_boxlow
+    )
+    for signal in bollinger_box_signals:
+    color = get_color(signal)
+    st.markdown(render_card("", signal, color), unsafe_allow_html=True)
     st.markdown("---")
