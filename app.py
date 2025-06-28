@@ -269,6 +269,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 else:
                     st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
+            # 指標訊號卡片
             ma_color = (
                 "green" if "多頭" in ma_status else
                 "red" if "空頭" in ma_status else
@@ -317,7 +318,6 @@ for tab, stocks in zip(tabs, stock_groups):
                 unsafe_allow_html=True,
             )
 
-            # 指標訊號卡片
             rsi_signal = ""
             if latest_rsi < 20:
                 rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
