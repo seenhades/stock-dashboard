@@ -330,6 +330,11 @@ for tab, stocks in zip(tabs, stock_groups):
                 unsafe_allow_html=True,
             )
 
+            if "中性" not in ma_cross_short:
+                st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
+            if "中性" not in ma_cross_mid:
+                st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
+    
             rsi_signal = ""
             if latest_rsi < 20:
                 rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
