@@ -293,7 +293,7 @@ for tab, stocks in zip(tabs, stock_groups):
                 unsafe_allow_html=True,
             )
 
-                        ma_color = (
+            ma_color = (
                 "green" if "多頭" in ma_status else
                 "red" if "空頭" in ma_status else
                 "orange"
