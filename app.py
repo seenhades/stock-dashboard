@@ -164,7 +164,7 @@ jp_stocks = {k: v for k, v in stock_list.items() if v.endswith(".T")}
 hk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".HK")}
 de_stocks = {k: v for k, v in stock_list.items() if v.endswith(".DE")}
 
-tabs = st.tabs(["🇹🇼 台灣", "🇺🇸 美國", "🇬🇧 英國", "🇯🇵 日本", "🇭🇰 香港", "🇩🇪 德國"])
+tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
 stock_groups = [tw_stocks, us_stocks, uk_stocks, jp_stocks, hk_stocks, de_stocks]
 
 for tab, stocks in zip(tabs, stock_groups):
