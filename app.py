@@ -443,7 +443,7 @@ for tab, stocks in zip(tabs, stock_groups):
             )
     up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
     prob_text = f"📈 綜合上漲機率：{int(up_prob * 100)}%"
-        cards.append((prob_text, get_color(prob_text)))
+            cards.append((prob_text, get_color(prob_text)))
             overall_color = get_color(overall_signal)
             cards.append((overall_signal, get_color(overall_signal)))
             st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
