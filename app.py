@@ -220,74 +220,74 @@ for tab, stocks in zip(tabs, stock_groups):
                 st.warning(f"{symbol} 收盤價非有效數值")
                 continue
 
-    # === 技術指標計算 ===
-    data['RSI'] = calculate_rsi(data['Close'])
-    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-    data['CCI'] = calculate_cci(data)
-    data['%K'], data['%D'] = calculate_kd(data)
-    data['5MA'] = data['Close'].rolling(window=5).mean()
-    data['10MA'] = data['Close'].rolling(window=10).mean()
-    data['20MA'] = data['Close'].rolling(window=20).mean()
-    data['60MA'] = data['Close'].rolling(window=60).mean()
-    data['120MA'] = data['Close'].rolling(window=120).mean()
-    data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
-    data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
-    
-    # === 最新值提取 ===
-    latest_rsi = data['RSI'].iloc[-1]
-    latest_macd = data['MACD'].iloc[-1]
-    latest_signal = data['Signal'].iloc[-1]
-    latest_cci = data['CCI'].iloc[-1]
-    latest_k = data['%K'].iloc[-1]
-    latest_d = data['%D'].iloc[-1]
-    latest_5ma = data['5MA'].iloc[-1]
-    latest_10ma = data['10MA'].iloc[-1]
-    latest_20ma = data['20MA'].iloc[-1]
-    latest_60ma = data['60MA'].iloc[-1]
-    latest_120ma = data['120MA'].iloc[-1]
-    latest_upperbb = data['UpperBB'].iloc[-1]
-    latest_lowerbb = data['LowerBB'].iloc[-1]
-    latest_boxhigh = data['BoxHigh'].iloc[-1]
-    latest_boxlow = data['BoxLow'].iloc[-1]
+            # === 技術指標計算 ===
+            data['RSI'] = calculate_rsi(data['Close'])
+            data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+            data['CCI'] = calculate_cci(data)
+            data['%K'], data['%D'] = calculate_kd(data)
+            data['5MA'] = data['Close'].rolling(window=5).mean()
+            data['10MA'] = data['Close'].rolling(window=10).mean()
+            data['20MA'] = data['Close'].rolling(window=20).mean()
+            data['60MA'] = data['Close'].rolling(window=60).mean()
+            data['120MA'] = data['Close'].rolling(window=120).mean()
+            data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
+            data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
 
-    if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
-        latest_boxhigh = latest_boxlow = None
-    
-        ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-        ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
-    
-        st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-    
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
-    
-            rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
-            st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
-    
-            macd_color = "green" if latest_macd > latest_signal else "red"
-            st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
-    
-            cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
-            st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
-    
-            if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-                kd_color = "green"
-            elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-                kd_color = "red"
-            else:
-                kd_color = "unsafe_allow_html=True"
-            st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
-    
-        with col2:
-            st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
-            if latest_boxhigh is not None and latest_boxlow is not None:
-                st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
+            # === 最新值提取 ===
+            latest_rsi = data['RSI'].iloc[-1]
+            latest_macd = data['MACD'].iloc[-1]
+            latest_signal = data['Signal'].iloc[-1]
+            latest_cci = data['CCI'].iloc[-1]
+            latest_k = data['%K'].iloc[-1]
+            latest_d = data['%D'].iloc[-1]
+            latest_5ma = data['5MA'].iloc[-1]
+            latest_10ma = data['10MA'].iloc[-1]
+            latest_20ma = data['20MA'].iloc[-1]
+            latest_60ma = data['60MA'].iloc[-1]
+            latest_120ma = data['120MA'].iloc[-1]
+            latest_upperbb = data['UpperBB'].iloc[-1]
+            latest_lowerbb = data['LowerBB'].iloc[-1]
+            latest_boxhigh = data['BoxHigh'].iloc[-1]
+            latest_boxlow = data['BoxLow'].iloc[-1]
+
+            if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
+                latest_boxhigh = latest_boxlow = None
+
+            ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
+            ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
+
+            st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
+
+                rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
+                st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
+
+                macd_color = "green" if latest_macd > latest_signal else "red"
+                st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
+
+                cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
+                st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
+
+                if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
+                    kd_color = "green"
+                elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
+                    kd_color = "red"
+                else:
+                    kd_color = "unsafe_allow_html=True"
+                st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
+
+            with col2:
+                st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
+                if latest_boxhigh is not None and latest_boxlow is not None:
+                    st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
             # 指標訊號卡片
             ma_color = (
@@ -410,6 +410,31 @@ for tab, stocks in zip(tabs, stock_groups):
                     continue
                 color = get_color(signal)
                 st.markdown(render_card("", signal, color), unsafe_allow_html=True)
+
+            # === 上漲機率參數設定 ===
+            INDICATOR_WEIGHTS = {
+                "RSI": (0.65, 1),
+                "MACD": (0.68, 2),
+                "CCI": (0.60, 1),
+                "KD": (0.62, 1),
+                "布林通道": (0.64, 1.5),
+                "箱型": (0.66, 1.5),
+                "均線": (0.70, 2)
+            }
+
+# === 加權平均預測上漲機率 ===
+def calculate_weighted_probability(signals):
+    score = 0
+    weight_total = 0
+    for signal in signals:
+        for key, (prob, weight) in INDICATOR_WEIGHTS.items():
+            if key in signal and "買進" in signal:
+                score += prob * weight
+                weight_total += weight
+    return round(score / weight_total, 3) if weight_total > 0 else 0.5
+
+up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
+cards.append((f"📈 綜合上漲機率：{int(up_prob * 100)}%", get_color(str(up_prob))))
 
             signals_list, overall_signal = evaluate_signals(
                 latest_5ma, latest_20ma, latest_60ma,
