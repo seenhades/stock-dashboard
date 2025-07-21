@@ -220,66 +220,66 @@ for tab, stocks in zip(tabs, stock_groups):
                 st.warning(f"{symbol} 收盤價非有效數值")
                 continue
 
-            # === 技術指標計算 ===
-            data['RSI'] = calculate_rsi(data['Close'])
-            data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-            data['CCI'] = calculate_cci(data)
-            data['%K'], data['%D'] = calculate_kd(data)
-            data['5MA'] = data['Close'].rolling(window=5).mean()
-            data['10MA'] = data['Close'].rolling(window=10).mean()
-            data['20MA'] = data['Close'].rolling(window=20).mean()
-            data['60MA'] = data['Close'].rolling(window=60).mean()
-            data['120MA'] = data['Close'].rolling(window=120).mean()
-            data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
-            data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
+# === 技術指標計算 ===
+data['RSI'] = calculate_rsi(data['Close'])
+data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+data['CCI'] = calculate_cci(data)
+data['%K'], data['%D'] = calculate_kd(data)
+data['5MA'] = data['Close'].rolling(window=5).mean()
+data['10MA'] = data['Close'].rolling(window=10).mean()
+data['20MA'] = data['Close'].rolling(window=20).mean()
+data['60MA'] = data['Close'].rolling(window=60).mean()
+data['120MA'] = data['Close'].rolling(window=120).mean()
+data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
+data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
 
-            # === 最新值提取 ===
-            latest_rsi = data['RSI'].iloc[-1]
-            latest_macd = data['MACD'].iloc[-1]
-            latest_signal = data['Signal'].iloc[-1]
-            latest_cci = data['CCI'].iloc[-1]
-            latest_k = data['%K'].iloc[-1]
-            latest_d = data['%D'].iloc[-1]
-            latest_5ma = data['5MA'].iloc[-1]
-            latest_10ma = data['10MA'].iloc[-1]
-            latest_20ma = data['20MA'].iloc[-1]
-            latest_60ma = data['60MA'].iloc[-1]
-            latest_120ma = data['120MA'].iloc[-1]
-            latest_upperbb = data['UpperBB'].iloc[-1]
-            latest_lowerbb = data['LowerBB'].iloc[-1]
-            latest_boxhigh = data['BoxHigh'].iloc[-1]
-            latest_boxlow = data['BoxLow'].iloc[-1]
+# === 最新值提取 ===
+latest_rsi = data['RSI'].iloc[-1]
+latest_macd = data['MACD'].iloc[-1]
+latest_signal = data['Signal'].iloc[-1]
+latest_cci = data['CCI'].iloc[-1]
+latest_k = data['%K'].iloc[-1]
+latest_d = data['%D'].iloc[-1]
+latest_5ma = data['5MA'].iloc[-1]
+latest_10ma = data['10MA'].iloc[-1]
+latest_20ma = data['20MA'].iloc[-1]
+latest_60ma = data['60MA'].iloc[-1]
+latest_120ma = data['120MA'].iloc[-1]
+latest_upperbb = data['UpperBB'].iloc[-1]
+latest_lowerbb = data['LowerBB'].iloc[-1]
+latest_boxhigh = data['BoxHigh'].iloc[-1]
+latest_boxlow = data['BoxLow'].iloc[-1]
 
-            if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
-                latest_boxhigh = latest_boxlow = None
+if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
+    latest_boxhigh = latest_boxlow = None
 
-            ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-            ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
+    ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
+    ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
 
-            st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
+    st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
+col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
 
-                rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
-                st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
+        rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
+        st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
 
-                macd_color = "green" if latest_macd > latest_signal else "red"
-                st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
+        macd_color = "green" if latest_macd > latest_signal else "red"
+        st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
 
-                cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
-                st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
+        cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
+        st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
 
-                if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-                    kd_color = "green"
-                elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-                    kd_color = "red"
-                else:
-                    kd_color = "unsafe_allow_html=True"
-                st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
+        if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
+            kd_color = "green"
+        elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
+            kd_color = "red"
+        else:
+            kd_color = "unsafe_allow_html=True"
+        st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
 
             with col2:
                 st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
