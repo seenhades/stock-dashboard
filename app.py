@@ -433,9 +433,6 @@ def calculate_weighted_probability(signals):
                 weight_total += weight
     return round(score / weight_total, 3) if weight_total > 0 else 0.5
 
-up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
-cards.append((f"📈 綜合上漲機率：{int(up_prob * 100)}%", get_color(str(up_prob))))
-
 # === 主程式整合顯示卡片 ===
 signals_list, overall_signal, ma_cross_short, ma_cross_mid = evaluate_signals(
     latest_5ma, latest_20ma, latest_60ma,
