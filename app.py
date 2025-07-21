@@ -436,14 +436,14 @@ def calculate_weighted_probability(signals):
 up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
 cards.append((f"📈 綜合上漲機率：{int(up_prob * 100)}%", get_color(str(up_prob))))
 
-            signals_list, overall_signal = evaluate_signals(
-                latest_5ma, latest_20ma, latest_60ma,
-                latest_rsi, latest_macd, latest_signal,
-                latest_cci, latest_k, latest_d,
-                latest_close, latest_upperbb, latest_lowerbb,
-                latest_boxhigh, latest_boxlow,
-            )
-            overall_color = get_color(overall_signal)
-            st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
+signals_list, overall_signal = evaluate_signals(
+    latest_5ma, latest_20ma, latest_60ma,
+    latest_rsi, latest_macd, latest_signal,
+    latest_cci, latest_k, latest_d,
+    latest_close, latest_upperbb, latest_lowerbb,
+    latest_boxhigh, latest_boxlow,
+)
+overall_color = get_color(overall_signal)
+st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
 
-            st.markdown("---")
+st.markdown("---")
