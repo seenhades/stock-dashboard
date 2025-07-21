@@ -436,14 +436,36 @@ def calculate_weighted_probability(signals):
 up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
 cards.append((f"📈 綜合上漲機率：{int(up_prob * 100)}%", get_color(str(up_prob))))
 
-signals_list, overall_signal = evaluate_signals(
+# === 主程式整合顯示卡片 ===
+signals_list, overall_signal, ma_cross_short, ma_cross_mid = evaluate_signals(
     latest_5ma, latest_20ma, latest_60ma,
     latest_rsi, latest_macd, latest_signal,
     latest_cci, latest_k, latest_d,
     latest_close, latest_upperbb, latest_lowerbb,
     latest_boxhigh, latest_boxlow,
 )
-overall_color = get_color(overall_signal)
-st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
 
-st.markdown("---")
+cards = []
+
+# 均線卡片先顯示
+if "中性" not in ma_cross_short:
+    cards.append((ma_cross_short, get_color(ma_cross_short)))
+if "中性" not in ma_cross_mid:
+    cards.append((ma_cross_mid, get_color(ma_cross_mid)))
+
+# 其他訊號卡片
+for signal in signals_list:
+    if "中性" not in signal:
+        cards.append((signal, get_color(signal)))
+
+# 上漲機率卡片
+up_prob = calculate_weighted_probability(signals_list + [ma_cross_short, ma_cross_mid])
+prob_text = f"📈 綜合上漲機率：{int(up_prob * 100)}%"
+cards.append((prob_text, get_color(prob_text)))
+
+# 綜合評估卡片
+cards.append((overall_signal, get_color(overall_signal)))
+
+# 顯示所有卡片
+for text, color in cards:
+    st.markdown(render_card("", text, color), unsafe_allow_html=True)
