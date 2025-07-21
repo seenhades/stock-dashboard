@@ -258,7 +258,7 @@ if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
 
     st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
