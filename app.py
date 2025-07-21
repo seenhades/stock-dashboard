@@ -220,35 +220,35 @@ for tab, stocks in zip(tabs, stock_groups):
                 st.warning(f"{symbol} 收盤價非有效數值")
                 continue
 
-# === 技術指標計算 ===
-data['RSI'] = calculate_rsi(data['Close'])
-data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-data['CCI'] = calculate_cci(data)
-data['%K'], data['%D'] = calculate_kd(data)
-data['5MA'] = data['Close'].rolling(window=5).mean()
-data['10MA'] = data['Close'].rolling(window=10).mean()
-data['20MA'] = data['Close'].rolling(window=20).mean()
-data['60MA'] = data['Close'].rolling(window=60).mean()
-data['120MA'] = data['Close'].rolling(window=120).mean()
-data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
-data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
-
-# === 最新值提取 ===
-latest_rsi = data['RSI'].iloc[-1]
-latest_macd = data['MACD'].iloc[-1]
-latest_signal = data['Signal'].iloc[-1]
-latest_cci = data['CCI'].iloc[-1]
-latest_k = data['%K'].iloc[-1]
-latest_d = data['%D'].iloc[-1]
-latest_5ma = data['5MA'].iloc[-1]
-latest_10ma = data['10MA'].iloc[-1]
-latest_20ma = data['20MA'].iloc[-1]
-latest_60ma = data['60MA'].iloc[-1]
-latest_120ma = data['120MA'].iloc[-1]
-latest_upperbb = data['UpperBB'].iloc[-1]
-latest_lowerbb = data['LowerBB'].iloc[-1]
-latest_boxhigh = data['BoxHigh'].iloc[-1]
-latest_boxlow = data['BoxLow'].iloc[-1]
+    # === 技術指標計算 ===
+    data['RSI'] = calculate_rsi(data['Close'])
+    data['MACD'], data['Signal'] = calculate_macd(data['Close'])
+    data['CCI'] = calculate_cci(data)
+    data['%K'], data['%D'] = calculate_kd(data)
+    data['5MA'] = data['Close'].rolling(window=5).mean()
+    data['10MA'] = data['Close'].rolling(window=10).mean()
+    data['20MA'] = data['Close'].rolling(window=20).mean()
+    data['60MA'] = data['Close'].rolling(window=60).mean()
+    data['120MA'] = data['Close'].rolling(window=120).mean()
+    data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
+    data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
+    
+    # === 最新值提取 ===
+    latest_rsi = data['RSI'].iloc[-1]
+    latest_macd = data['MACD'].iloc[-1]
+    latest_signal = data['Signal'].iloc[-1]
+    latest_cci = data['CCI'].iloc[-1]
+    latest_k = data['%K'].iloc[-1]
+    latest_d = data['%D'].iloc[-1]
+    latest_5ma = data['5MA'].iloc[-1]
+    latest_10ma = data['10MA'].iloc[-1]
+    latest_20ma = data['20MA'].iloc[-1]
+    latest_60ma = data['60MA'].iloc[-1]
+    latest_120ma = data['120MA'].iloc[-1]
+    latest_upperbb = data['UpperBB'].iloc[-1]
+    latest_lowerbb = data['LowerBB'].iloc[-1]
+    latest_boxhigh = data['BoxHigh'].iloc[-1]
+    latest_boxlow = data['BoxLow'].iloc[-1]
 
 if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
     latest_boxhigh = latest_boxlow = None
