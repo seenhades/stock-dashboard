@@ -281,13 +281,13 @@ col1, col2 = st.columns(2)
             kd_color = "unsafe_allow_html=True"
         st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
 
-            with col2:
-                st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
-                if latest_boxhigh is not None and latest_boxlow is not None:
-                    st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
-                else:
-                    st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
+        if latest_boxhigh is not None and latest_boxlow is not None:
+            st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
 
             # 指標訊號卡片
             ma_color = (
