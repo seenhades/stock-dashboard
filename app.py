@@ -14,9 +14,11 @@ stock_list = {
     "1306 ETF": "1306.T",
     "燿華": "2367.TW",
     "銘異": "3060.TW",
+    "茂矽": "2342.TW",
     "台中銀": "2812.TW",
     "台新金": "2887.TW",
-    "盈富恆指ETF": "2800.HK",
+    "華新": "1605.TW",
+    "中國石化": "0386.HK",
     "香港中華燃氣": "0003.HK",
     "國泰航空": "0293.HK",
     "碧桂園": "2007.HK",
@@ -27,7 +29,7 @@ stock_list = {
     "Porsche AG 保時捷製造": "P911.DE",
     "Infineon 英飛凌": "IFX.DE",
     "Organon 歐嘉隆": "OGN",
-    "Newmont 紐曼礦業": "NEM",
+    "Smith & Wesson Brands": "SWBI",
     "VanEck Gold ETF": "OUNZ",
 }
 
