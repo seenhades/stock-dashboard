@@ -22,7 +22,6 @@ stock_list = {
     "香港中華燃氣": "0003.HK",
     "國泰航空": "0293.HK",
     "碧桂園": "2007.HK",
-    "鴻騰精密": "6088.HK",
     "Shell 殼牌石油": "SHEL.L",
     "Rolls Royce 勞斯萊斯": "RR.L",
     "Porsche SE 保時捷控股": "PAH3.DE",
