@@ -18,7 +18,6 @@ stock_list = {
     "台中銀": "2812.TW",
     "台新金": "2887.TW",
     "華新": "1605.TW",
-    "中國石化": "0386.HK",
     "香港中華燃氣": "0003.HK",
     "國泰航空": "0293.HK",
     "碧桂園": "2007.HK",
@@ -29,7 +28,6 @@ stock_list = {
     "Infineon 英飛凌": "IFX.DE",
     "Organon 歐嘉隆": "OGN",
     "Smith & Wesson Brands": "SWBI",
-    "VanEck Gold ETF": "OUNZ",
 }
 
 end = datetime.datetime.now()
