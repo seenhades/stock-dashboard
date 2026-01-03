@@ -15,6 +15,7 @@ stock_list = {
     "燿華": "2367.TW",
     "銘異": "3060.TW",
     "茂矽": "2342.TW",
+    "群電": "6412.TW",
     "台中銀": "2812.TW",
     "台新金": "2887.TW",
     "華新": "1605.TW",
@@ -27,6 +28,7 @@ stock_list = {
     "Porsche AG 保時捷製造": "P911.DE",
     "Infineon 英飛凌": "IFX.DE",
     "Organon 歐嘉隆": "OGN",
+    "Pfizer 輝瑞": "PFE",
     "Smith & Wesson Brands": "SWBI",
 }
 
