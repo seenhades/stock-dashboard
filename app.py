@@ -13,9 +13,10 @@ stock_list = {
     "1306 ETF": "1306.T", "Panasonic 松下": "6752.T", "Sony Group": "6758.T",
     "NTT 日本電信": "9432.T", "英業達": "2356.TW", "希華": "2484.TW",
     "晶彩科": "3535.TW", "群電": "6412.TW", "康舒": "6282.TW",
-    "台中銀": "2812.TW", "台新金": "2887.TW", "香港中華燃氣": "0003.HK",
-    "國泰航空": "0293.HK", "Rolls Royce": "RR.L", "Shell": "SHEL.L",
-    "Porsche SE": "PAH3.DE", "Pfizer 輝瑞": "PFE", "Tower Semi": "TSEM"
+    "台中銀": "2812.TW", "台新金": "2887.TW", "碧桂園": "2007.HK",
+    "香港中華燃氣": "0003.HK", "國泰航空": "0293.HK", "Rolls Royce": "RR.L", 
+    "Shell": "SHEL.L", "Porsche SE": "PAH3.DE", "Porsche AG": "P911.DE",
+    "Organon 歐嘉隆": "OGN", "Pfizer 輝瑞": "PFE", "Tower Semi": "TSEM"
 }
 
 end_date = datetime.datetime.now()
