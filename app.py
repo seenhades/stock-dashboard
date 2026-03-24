@@ -4,9 +4,11 @@ import datetime
 import numpy as np
 import pandas as pd
 
-st.set_page_config(layout="wide")
-st.title("📈 股票技術指標與收盤價監控")
+# === 設定區 ===
+st.set_page_config(layout="wide", page_title="股票技術指標與資金管理監控")
+st.title("📈 股票技術指標與凱利公式監控")
 
+# 股票清單
 stock_list = {
     "Panasonic 松下電器": "6752.T",
     "NTT 日本電信電話": "9432.T",
@@ -32,10 +34,12 @@ stock_list = {
     "Smith & Wesson Brands": "SWBI",
 }
 
-end = datetime.datetime.now()
-start = end - datetime.timedelta(days=250)
+# 設定參數
+end_date = datetime.datetime.now()
+start_date = end_date - datetime.timedelta(days=365) # 增加天數以確保 120MA 計算正確
+REWARD_RISK_RATIO = 2.0  # 預設賺賠比 (獲利/虧損)
 
-# === 指標計算函式 ===
+# === 技術指標計算函式 ===
 def calculate_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
@@ -43,8 +47,7 @@ def calculate_rsi(series, period=14):
     avg_gain = gain.rolling(window=period).mean()
     avg_loss = loss.rolling(window=period).mean()
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    return 100 - (100 / (1 + rs))
 
 def calculate_macd(series, span_short=12, span_long=26, signal_span=9):
     ema_short = series.ewm(span=span_short, adjust=False).mean()
@@ -57,8 +60,7 @@ def calculate_cci(data, period=20):
     tp = (data['High'] + data['Low'] + data['Close']) / 3
     sma = tp.rolling(period).mean()
     mad = tp.rolling(period).apply(lambda x: np.fabs(x - x.mean()).mean())
-    cci = (tp - sma) / (0.015 * mad)
-    return cci
+    return (tp - sma) / (0.015 * mad)
 
 def calculate_kd(data, k_period=9, d_period=3):
     low_min = data['Low'].rolling(window=k_period).min()
@@ -71,357 +73,131 @@ def calculate_kd(data, k_period=9, d_period=3):
 def calculate_bollinger_bands(series, window=20, num_std=2):
     sma = series.rolling(window).mean()
     std = series.rolling(window).std()
-    upper_band = sma + num_std * std
-    lower_band = sma - num_std * std
-    return upper_band, lower_band
+    return sma + (num_std * std), sma - (num_std * std)
 
 def calculate_box_range(series, period=20):
-    upper = series.rolling(window=period).max()
-    lower = series.rolling(window=period).min()
-    return upper, lower
-    
-def evaluate_bollinger_box(close, upperbb, lowerbb, boxhigh, boxlow):
-    signals = []
-    if close > upperbb:
-        signals.append("💡 突破布林上軌，可能進入強勢區，須注意過熱，買進訊號")
-    elif close < lowerbb:
-        signals.append("⚠ 跌破布林下軌，可能轉弱，參考RSI，賣出訊號")
-    else:
-        signals.append("📊 價格在布林通道內")
+    return series.rolling(window=period).max(), series.rolling(window=period).min()
 
-    if pd.notna(boxhigh) and close > boxhigh:
-        signals.append("💡 突破箱型上緣，買進訊號")
-    elif pd.notna(boxlow) and close < boxlow:
-        signals.append("⚠ 跌破箱型下緣，賣出訊號")
-    else:
-        signals.append("📊 價格在箱型區間內")
-
-    return signals
-
+# === 趨勢與訊號評估函式 ===
 def evaluate_ma_trend(ma5, ma10, ma20):
-    if ma5 > ma10 > ma20:
-        return "📈 短期均線呈多頭排列"
-    elif ma5 < ma10 < ma20:
-        return "📉 短期均線呈空頭排列"
-    else:
-        return "🔄 短期均線呈糾結狀態"
+    if ma5 > ma10 > ma20: return "短期均線多頭排列 📈"
+    elif ma5 < ma10 < ma20: return "短期均線空頭排列 📉"
+    return "短期均線糾結 🔄"
 
 def evaluate_ma_trend_mid(ma20, ma60, ma120):
-    if ma20 > ma60 > ma120:
-        return "📈 中期均線呈多頭排列"
-    elif ma20 < ma60 < ma120:
-        return "📉 中期均線呈空頭排列"
-    else:
-        return "🔄 中期均線呈糾結狀態"
+    if ma20 > ma60 > ma120: return "中期均線多頭排列 📈"
+    elif ma20 < ma60 < ma120: return "中期均線空頭排列 📉"
+    return "中期均線糾結 🔄"
 
-def evaluate_ma_cross(ma_cross_short, ma_cross_mid, label=""):
-    if ma_cross_short > ma_cross_mid:
-        return f"💰 {label}黃金交叉，買進訊號"
-    elif ma_cross_short < ma_cross_mid:
-        return f"⚠️ {label}死亡交叉，賣出訊號"
-    else:
-        return f"🔄 {label}均線重合，中性觀望"
+def calculate_expected_value(win_rate, b=REWARD_RISK_RATIO):
+    """計算期望值: (勝率 * 賺賠比) - (敗率 * 1)"""
+    return (win_rate * b) - (1 - win_rate)
 
-def evaluate_signals(ma5, ma20, ma60, rsi, macd, signal, cci, k, d, close, upperbb, lowerbb, boxhigh, boxlow):
+def calculate_kelly(win_rate, b=REWARD_RISK_RATIO):
+    """凱利公式: f* = (bp - q) / b"""
+    p = win_rate
+    q = 1 - p
+    if b == 0: return 0
+    f_star = (b * p - q) / b
+    return max(0, f_star) # 負值代表不建議投資
+
+def evaluate_signals(data_row):
     signals = []
+    # 均線趨勢
+    ma_s = evaluate_ma_trend(data_row['5MA'], data_row['10MA'], data_row['20MA'])
+    ma_m = evaluate_ma_trend_mid(data_row['20MA'], data_row['60MA'], data_row['120MA'])
+    if "多頭" in ma_s: signals.append("短期多頭 (買進)")
+    if "多頭" in ma_m: signals.append("中期多頭 (買進)")
+    if "空頭" in ma_s: signals.append("短期空頭 (賣出)")
+    if "空頭" in ma_m: signals.append("中期空頭 (賣出)")
 
-    # 均線交叉訊號
-    ma_cross_short = evaluate_ma_cross(ma5, ma20, "5/20MA ")
-    ma_cross_mid = evaluate_ma_cross(ma20, ma60, "20/60MA ")
+    # RSI
+    if data_row['RSI'] < 30: signals.append("RSI超賣 (買進)")
+    elif data_row['RSI'] > 70: signals.append("RSI超買 (賣出)")
     
-    if "中性" not in ma_cross_short:
-        st.markdown(render_card("", ma_cross_short, get_color(ma_cross_short)), unsafe_allow_html=True)
-    if "中性" not in ma_cross_mid:
-        st.markdown(render_card("", ma_cross_mid, get_color(ma_cross_mid)), unsafe_allow_html=True)
+    # MACD
+    if data_row['MACD'] > data_row['Signal']: signals.append("MACD金叉 (買進)")
+    else: signals.append("MACD死叉 (賣出)")
 
-    # RSI 訊號
-    if rsi < 20:
-        signals.append("🧊 RSI過冷，可能超賣，買進訊號")
-    elif rsi > 70:
-        signals.append("🔥 RSI過熱，可能過買，賣出訊號")
+    # 布林 & 箱型
+    if data_row['Close'] > data_row['UpperBB']: signals.append("突破布林上軌 (買進)")
+    if data_row['Close'] > data_row['BoxHigh']: signals.append("突破箱型上緣 (買進)")
+    if data_row['Close'] < data_row['LowerBB']: signals.append("跌破布林下軌 (賣出)")
 
-    # MACD 訊號
-    if macd > signal:
-        signals.append("💰 MACD黃金交叉，買進訊號")
-    else:
-        signals.append("⚠️ MACD死亡交叉，賣出訊號")
+    buy_cnt = sum(1 for s in signals if "買進" in s)
+    sell_cnt = sum(1 for s in signals if "賣出" in s)
+    
+    # 計算估計勝率 (簡單模型：買進訊號佔比)
+    total = buy_cnt + sell_cnt
+    win_rate = buy_cnt / total if total > 0 else 0.5
+    
+    return signals, win_rate, ma_s, ma_m
 
-    # CCI 訊號
-    if cci < -100:
-        signals.append("🧊 CCI過低，可能超賣，買進訊號")
-    elif cci > 100:
-        signals.append("🔥 CCI過高，可能過買，賣出訊號")
+# === UI 輔助函式 ===
+def render_card(title, text, color):
+    return f"""
+    <div style='background-color: #f7f9fc; border-left: 6px solid {color}; padding: 12px; margin: 8px 0; border-radius: 4px;'>
+        <div style='color: gray; font-size: 14px;'>{title}</div>
+        <div style='color: {color}; font-size: 18px; font-weight: bold;'>{text}</div>
+    </div>
+    """
 
-    # KD 訊號
-    if k < 20 and d < 20 and k > d:
-        signals.append("💰 KD低檔黃金交叉，買進訊號")
-    elif k > 80 and d > 80 and k < d:
-        signals.append("⚠️ KD高檔死亡交叉，賣出訊號")
-
-    # 布林通道訊號
-    if close > upperbb:
-        signals.append("💡 突破布林上軌，可能進入強勢區，須注意過熱，買進訊號")
-    elif close < lowerbb:
-        signals.append("⚠️ 跌破布林下軌，可能轉弱，參考RSI，賣出訊號")
-
-    # 箱型訊號
-    if pd.notna(boxhigh) and close > boxhigh:
-        signals.append("💡 突破箱型上緣，買進訊號")
-    elif pd.notna(boxlow) and close < boxlow:
-        signals.append("⚠️ 跌破箱型下緣，賣出訊號")
-
-    # 綜合評估
-    buy_signals = sum(1 for s in signals if "買進" in s)
-    sell_signals = sum(1 for s in signals if "賣出" in s)
-    if buy_signals > sell_signals:
-        overall = "🟢 綜合評估：買進"
-    elif sell_signals > buy_signals:
-        overall = "🔴 綜合評估：賣出"
-    else:
-        overall = "🟠 綜合評估：持有"
-
-    return signals, overall
-
-
-def colorize(value, thresholds, colors):
-    if value < thresholds[0]:
-        return colors[0]
-    elif value > thresholds[1]:
-        return colors[2]
-    else:
-        return colors[1]
-
-# === 將股票依國家分類 ===
-jp_stocks = {k: v for k, v in stock_list.items() if v.endswith(".T")}
-tw_stocks = {k: v for k, v in stock_list.items() if v.endswith(".TW")}
-hk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".HK")}
-uk_stocks = {k: v for k, v in stock_list.items() if v.endswith(".L")}
-de_stocks = {k: v for k, v in stock_list.items() if v.endswith(".DE")}
-us_stocks = {k: v for k, v in stock_list.items() if "." not in v}  # 無副檔名假設為美股
-
-
+# === 主程式迴圈 ===
 tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
-stock_groups = [jp_stocks, tw_stocks, hk_stocks, uk_stocks, de_stocks, us_stocks]
+suffixes = {0: ".T", 1: ".TW", 2: ".HK", 3: ".L", 4: ".DE", 5: ""}
 
-for tab, stocks in zip(tabs, stock_groups):
+for i, tab in enumerate(tabs):
     with tab:
-        for name, symbol in stocks.items():
+        current_stocks = {k: v for k, v in stock_list.items() if (v.endswith(suffixes[i]) if suffixes[i] else "." not in v)}
+        
+        for name, symbol in current_stocks.items():
             st.subheader(f"{name} ({symbol})")
-            data = yf.download(symbol, start=start, end=end, interval="1d")
-            if data.empty or len(data) < 30:
-                st.warning(f"{symbol} 資料不足或無法取得")
+            data = yf.download(symbol, start=start_date, end=end_date, interval="1d", progress=False)
+            
+            if data.empty or len(data) < 120:
+                st.warning(f"{symbol} 資料不足")
                 continue
 
-            try:
-                latest_close = data["Close"].iloc[-1].item()
-                prev_close = data["Close"].iloc[-2].item()
-            except Exception as e:
-                st.warning(f"{symbol} 收盤價讀取錯誤: {e}")
-                continue
-
-            if not (np.isfinite(latest_close) and np.isfinite(prev_close)):
-                st.warning(f"{symbol} 收盤價非有效數值")
-                continue
-
-            # === 技術指標計算 ===
+            # 計算指標
             data['RSI'] = calculate_rsi(data['Close'])
             data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-            data['CCI'] = calculate_cci(data)
-            data['%K'], data['%D'] = calculate_kd(data)
-            data['5MA'] = data['Close'].rolling(window=5).mean()
-            data['10MA'] = data['Close'].rolling(window=10).mean()
-            data['20MA'] = data['Close'].rolling(window=20).mean()
-            data['60MA'] = data['Close'].rolling(window=60).mean()
-            data['120MA'] = data['Close'].rolling(window=120).mean()
+            data['5MA'] = data['Close'].rolling(5).mean()
+            data['10MA'] = data['Close'].rolling(10).mean()
+            data['20MA'] = data['Close'].rolling(20).mean()
+            data['60MA'] = data['Close'].rolling(60).mean()
+            data['120MA'] = data['Close'].rolling(120).mean()
             data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
             data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
-
-            # === 最新值提取 ===
-            latest_rsi = data['RSI'].iloc[-1]
-            latest_macd = data['MACD'].iloc[-1]
-            latest_signal = data['Signal'].iloc[-1]
-            latest_cci = data['CCI'].iloc[-1]
-            latest_k = data['%K'].iloc[-1]
-            latest_d = data['%D'].iloc[-1]
-            latest_5ma = data['5MA'].iloc[-1]
-            latest_10ma = data['10MA'].iloc[-1]
-            latest_20ma = data['20MA'].iloc[-1]
-            latest_60ma = data['60MA'].iloc[-1]
-            latest_120ma = data['120MA'].iloc[-1]
-            latest_upperbb = data['UpperBB'].iloc[-1]
-            latest_lowerbb = data['LowerBB'].iloc[-1]
-            latest_boxhigh = data['BoxHigh'].iloc[-1]
-            latest_boxlow = data['BoxLow'].iloc[-1]
-
-            if not np.isfinite(latest_boxhigh) or not np.isfinite(latest_boxlow):
-                latest_boxhigh = latest_boxlow = None
-
-            ma_status = evaluate_ma_trend(latest_5ma, latest_10ma, latest_20ma)
-            ma_status_mid = evaluate_ma_trend_mid(latest_20ma, latest_60ma, latest_120ma)
-
-            st.metric("📌 最新收盤價", f"{latest_close:.2f}", f"{latest_close - prev_close:+.2f}")
-
-            col1, col2 = st.columns(2)
+            
+            # 取得最新一列
+            latest = data.iloc[-1]
+            prev_close = data['Close'].iloc[-2]
+            
+            # 評估與計算
+            signals, win_rate, ma_s, ma_m = evaluate_signals(latest)
+            ev = calculate_expected_value(win_rate)
+            kelly_f = calculate_kelly(win_rate)
+            
+            # 顯示資訊
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown("### 📊 <b>均線與動能指標</b>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>5MA:</b> {latest_5ma:.2f}, <b>10MA:</b> {latest_10ma:.2f}, <b>20MA:</b> {latest_20ma:.2f}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>20MA:</b> {latest_20ma:.2f}, <b>60MA:</b> {latest_60ma:.2f}, <b>120MA:</b> {latest_120ma:.2f}</div>", unsafe_allow_html=True)
-
-                rsi_color = colorize(latest_rsi, [30, 70], ["green", "unsafe_allow_html=True", "red"])
-                st.markdown(f"<div style='font-size: 18px;'><b>RSI:</b> <span style='color:{rsi_color}'>{latest_rsi:.2f}</span></div>", unsafe_allow_html=True)
-
-                macd_color = "green" if latest_macd > latest_signal else "red"
-                st.markdown(f"<div style='font-size: 18px;'><b>MACD:</b> <span style='color:{macd_color}'>{latest_macd:.4f}</span>, <b>Signal:</b> {latest_signal:.4f}</div>", unsafe_allow_html=True)
-
-                cci_color = colorize(latest_cci, [-100, 100], ["green", "unsafe_allow_html=True", "red"])
-                st.markdown(f"<div style='font-size: 18px;'><b>CCI:</b> <span style='color:{cci_color}'>{latest_cci:.2f}</span></div>", unsafe_allow_html=True)
-
-                if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-                    kd_color = "green"
-                elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-                    kd_color = "red"
-                else:
-                    kd_color = "unsafe_allow_html=True"
-                st.markdown(f"<div style='font-size: 18px;'><b>K:</b> <span style='color:{kd_color}'>{latest_k:.2f}</span>, <b>D:</b> <span style='color:{kd_color}'>{latest_d:.2f}</span></div>", unsafe_allow_html=True)
-
+                st.metric("最新收盤價", f"{latest['Close']:.2f}", f"{latest['Close']-prev_close:+.2f}")
+                st.write(f"**短期趨勢:** {ma_s}")
+                st.write(f"**中期趨勢:** {ma_m}")
+            
             with col2:
-                st.markdown("### 📉 <b>趨勢區間與價格帶</b>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 18px;'><b>布林通道：</b>上軌 = {latest_upperbb:.2f}, 下軌 = {latest_lowerbb:.2f}</div>", unsafe_allow_html=True)
-                if latest_boxhigh is not None and latest_boxlow is not None:
-                    st.markdown(f"<div style='font-size: 18px;'><b>箱型區間：</b>高點 = {latest_boxhigh:.2f}, 低點 = {latest_boxlow:.2f}</div>", unsafe_allow_html=True)
-                else:
-                    st.markdown("<div style='font-size: 18px; color:gray;'>箱型區間資料不足</div>", unsafe_allow_html=True)
+                ev_color = "green" if ev > 0 else "red"
+                st.markdown(render_card("期望值 (EV)", f"{ev:.2f}", ev_color), unsafe_allow_html=True)
+                st.markdown(render_card("估計勝率", f"{win_rate:.1%}", "blue"), unsafe_allow_html=True)
 
-            # 指標訊號卡片
-            ma_color = (
-                "green" if "多頭" in ma_status else
-                "red" if "空頭" in ma_status else
-                "orange"
-            )
-            st.markdown(
-                f"""
-                <div style='
-                    background-color: #f7f9fc;
-                    border-left: 6px solid {ma_color};
-                    padding: 12px 16px;
-                    margin: 12px 0;
-                    font-size: 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                '>
-                    <div> </div>
-                    <div style='color:{ma_color}; font-weight: 600;'>{ma_status}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            with col3:
+                kelly_color = "green" if kelly_f > 0.2 else "orange" if kelly_f > 0 else "red"
+                st.markdown(render_card("凱利建議位階 (Kelly %)", f"{kelly_f:.1%}", kelly_color), unsafe_allow_html=True)
+                
+                status = "🟢 建議買進" if ev > 0 and kelly_f > 0 else "🔴 建議觀望/賣出"
+                st.markdown(f"### 最終燈號: {status}")
 
-            ma_color_mid = (
-                "green" if "多頭" in ma_status_mid else
-                "red" if "空頭" in ma_status_mid else
-                "orange"
-            )
-            st.markdown(
-                f"""
-                <div style='
-                    background-color: #f7f9fc;
-                    border-left: 6px solid {ma_color};
-                    padding: 12px 16px;
-                    margin: 12px 0;
-                    font-size: 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                '>
-                    <div> </div>
-                    <div style='color:{ma_color_mid}; font-weight: 600;'>{ma_status_mid}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    
-            rsi_signal = ""
-            if latest_rsi < 20:
-                rsi_signal = "🧊 RSI過冷，可能超賣，買進訊號"
-            elif latest_rsi > 70:
-                rsi_signal = "🔥 RSI過熱，可能過買，賣出訊號"
-            else:
-                rsi_signal = "🔄 RSI中性"
+            with st.expander("查看所有觸發訊號"):
+                st.write(", ".join(signals))
+            st.divider()
 
-            macd_signal = ""
-            if latest_macd > latest_signal:
-                macd_signal = "💰 MACD黃金交叉，買進訊號"
-            else:
-                macd_signal = "⚠️ MACD死亡交叉，賣出訊號"
-
-            cci_signal = ""
-            if latest_cci < -100:
-                cci_signal = "🧊 CCI過低，可能超賣，買進訊號"
-            elif latest_cci > 100:
-                cci_signal = "🔥 CCI過高，可能過買，賣出訊號"
-            else:
-                cci_signal = "🔄 CCI中性"
-
-            kd_signal = ""
-            if latest_k < 20 and latest_d < 20 and latest_k > latest_d:
-                kd_signal = "💰 KD低檔黃金交叉，買進訊號"
-            elif latest_k > 80 and latest_d > 80 and latest_k < latest_d:
-                kd_signal = "⚠️ KD高檔死亡交叉，賣出訊號"
-            else:
-                kd_signal = "🔄 KD中性"
-
-            def render_card(icon, text, color):
-                return f"""
-                <div style='
-                    background-color: #f7f9fc;
-                    border-left: 6px solid {color};
-                    padding: 12px 16px;
-                    margin: 8px 0;
-                    font-size: 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                '>
-                    <div style='font-size: 24px;'>{icon}</div>
-                    <div style='color:{color}; font-weight: 600;'>{text}</div>
-                </div>
-                """
-
-            def get_color(signal_text):
-                if "買進" in signal_text:
-                    return "green"
-                elif "賣出" in signal_text:
-                    return "red"
-                else:
-                    return "orange"
-
-            if rsi_signal != "🔄 RSI中性":
-                st.markdown(render_card("", f"{rsi_signal}", get_color(rsi_signal)), unsafe_allow_html=True)
-            st.markdown(render_card("", f"{macd_signal}", get_color(macd_signal)), unsafe_allow_html=True)
-            if cci_signal != "🔄 CCI中性":
-                st.markdown(render_card("", f"{cci_signal}", get_color(cci_signal)), unsafe_allow_html=True)
-            if kd_signal != "🔄 KD中性":
-                st.markdown(render_card("", f"{kd_signal}", get_color(kd_signal)), unsafe_allow_html=True)
-
-            bollinger_box_signals = evaluate_bollinger_box(
-                latest_close, latest_upperbb, latest_lowerbb,
-                latest_boxhigh, latest_boxlow
-            )
-            for signal in bollinger_box_signals:
-                if "📊" in signal:
-                    continue
-                color = get_color(signal)
-                st.markdown(render_card("", signal, color), unsafe_allow_html=True)
-
-            signals_list, overall_signal = evaluate_signals(
-                latest_5ma, latest_20ma, latest_60ma,
-                latest_rsi, latest_macd, latest_signal,
-                latest_cci, latest_k, latest_d,
-                latest_close, latest_upperbb, latest_lowerbb,
-                latest_boxhigh, latest_boxlow,
-            )
-            overall_color = get_color(overall_signal)
-            st.markdown(render_card("", overall_signal, overall_color), unsafe_allow_html=True)
-
-            st.markdown("---")
