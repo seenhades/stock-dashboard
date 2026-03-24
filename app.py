@@ -12,15 +12,15 @@ st.title("📈 股票技術指標與凱利公式監控")
 stock_list = {
     "Panasonic 松下電器": "6752.T",
     "NTT 日本電信電話": "9432.T",
-    "Sony Group. 索尼集團": "6758.T",
+    "Mitsubishi Corp. 三菱商事": "8058.T",
     "1306 ETF": "1306.T",
-    "希華": "2484.TW",
-    "康舒": "6282.TW",
-    "晶彩科": "3535.TW",
+    "燿華": "2367.TW",
+    "銘異": "3060.TW",
+    "茂矽": "2342.TW",
     "群電": "6412.TW",
     "台中銀": "2812.TW",
     "台新金": "2887.TW",
-    "英業達": "2356.TW",
+    "華新": "1605.TW",
     "香港中華燃氣": "0003.HK",
     "國泰航空": "0293.HK",
     "碧桂園": "2007.HK",
@@ -28,9 +28,10 @@ stock_list = {
     "Rolls Royce 勞斯萊斯": "RR.L",
     "Porsche SE 保時捷控股": "PAH3.DE",
     "Porsche AG 保時捷製造": "P911.DE",
+    "Infineon 英飛凌": "IFX.DE",
     "Organon 歐嘉隆": "OGN",
     "Pfizer 輝瑞": "PFE",
-    "Tower Semiconductor": "TSEM",
+    "Smith & Wesson Brands": "SWBI",
 }
 
 # 設定參數
