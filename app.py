@@ -3,174 +3,119 @@ import yfinance as yf
 import datetime
 import numpy as np
 import pandas as pd
+import pandas_ta as ta  # 建議安裝 pandas_ta 來簡化複雜指標計算
 
 # === 1. 設定區 ===
-st.set_page_config(layout="wide", page_title="股票技術指標與資金管理監控")
-st.title("📈 股票技術指標與凱利公式監控 (含價位建議)")
+st.set_page_config(layout="wide", page_title="高級股票技術指標與量化監控")
+st.title("🚀 全方位量化交易監控系統 (含 5 大新指標)")
 
-# 股票清單 (從 PDF 擷取)
+# 股票清單
 stock_list = {
     "1306 ETF": "1306.T", "Panasonic 松下電器": "6752.T", "Sony Group. 索尼集團": "6758.T",
     "NTT 日本電信電話": "9432.T", "英業達": "2356.TW", "希華": "2484.TW",
     "晶彩科": "3535.TW", "群電": "6412.TW", "康舒": "6282.TW",
     "台中銀": "2812.TW", "台新金": "2887.TW", "香港中華燃氣": "0003.HK",
-    "國泰航空": "0293.HK", "碧桂園": "2007.HK", "Rolls Royce 勞斯萊斯": "RR.L",
-    "Shell 殼牌石油": "SHEL.L", "Porsche SE 保時捷控股": "PAH3.DE",
-    "Porsche AG 保時捷製造": "P911.DE", "Organon 歐嘉隆": "OGN",
-    "Pfizer 輝瑞": "PFE", "Tower Semiconductor": "TSEM",
+    "國泰航空": "0293.HK", "Rolls Royce 勞斯萊斯": "RR.L",
+    "Shell 殼牌石油": "SHEL.L", "Porsche SE": "PAH3.DE", "Pfizer 輝瑞": "PFE",
 }
 
 end_date = datetime.datetime.now()
 start_date = end_date - datetime.timedelta(days=365)
-REWARD_RISK_RATIO = 2.0
 
-# === 2. 技術指標與邏輯函式 ===
-def calculate_rsi(series, period=14):
-    delta = series.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-    rs = avg_gain / (avg_loss + 1e-9)
-    return 100 - (100 / (1 + rs))
+# === 2. 新增指標計算函式 ===
+def calculate_advanced_indicators(df):
+    # (1) KD 指標 (Stochastic)
+    stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=9, d=3)
+    df['K'], df['D'] = stoch['STOCHk_9_3_3'], stoch['STOCHd_9_3_3']
+    
+    # (2) 成交量變化 (Volume SMA)
+    df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
+    df['Vol_Ratio'] = df['Volume'] / df['Vol_MA20'] # 當前成交量與平均比值
+    
+    # (3) ATR (平均真實波幅) - 用於計算波動止損
+    df['ATR'] = ta.atr(df['High'], df['Low'], df['Close'], length=14)
+    
+    # (4) ADX (平均趨向指數) - 判斷趨勢強度
+    adx_df = ta.adx(df['High'], df['Low'], df['Close'], length=14)
+    df['ADX'] = adx_df['ADX_14']
+    
+    # (5) EMA (指數平滑移動平均線) - 靈敏趨勢線
+    df['EMA12'] = ta.ema(df['Close'], length=12)
+    df['EMA26'] = ta.ema(df['Close'], length=26)
+    
+    return df
 
-def calculate_macd(series):
-    ema12 = series.ewm(span=12, adjust=False).mean()
-    ema26 = series.ewm(span=26, adjust=False).mean()
-    macd = ema12 - ema26
-    signal = macd.ewm(span=9, adjust=False).mean()
-    return macd, signal
-
-def calculate_bollinger_bands(series, window=20, num_std=2):
-    sma = series.rolling(window).mean()
-    std = series.rolling(window).std()
-    return sma + (num_std * std), sma - (num_std * std)
-
-def calculate_box_range(series, period=20):
-    return series.rolling(window=period).max(), series.rolling(window=period).min()
-
-def evaluate_ma_trend(ma5, ma10, ma20):
-    if ma5 > ma10 > ma20: return "短期多頭 📈"
-    elif ma5 < ma10 < ma20: return "短期空頭 📉"
-    return "短期糾結 🔄"
-
-def evaluate_ma_trend_mid(ma20, ma60, ma120):
-    if ma20 > ma60 > ma120: return "中期多頭 📈"
-    elif ma20 < ma60 < ma120: return "中期空頭 📉"
-    return "中期糾結 🔄"
-
-def calculate_kelly(win_rate, b=REWARD_RISK_RATIO):
-    p, q = win_rate, 1 - win_rate
-    if b == 0: return 0
-    f_star = (b * p - q) / b
-    return max(0.0, float(f_star))
-
-def evaluate_signals(d):
+# === 3. 邏輯判斷優化 ===
+def evaluate_advanced_signals(d):
     signals = []
-    ma_s = evaluate_ma_trend(d['5MA'], d['10MA'], d['20MA'])
-    ma_m = evaluate_ma_trend_mid(d['20MA'], d['60MA'], d['120MA'])
+    # KD 邏輯
+    if d['K'] < 20 and d['K'] > d['D']: signals.append("KD低檔金叉 (強買)")
+    elif d['K'] > 80 and d['K'] < d['D']: signals.append("KD高檔死叉 (強賣)")
     
-    if "多頭" in ma_s: signals.append("短期多頭 (買進)")
-    if "多頭" in ma_m: signals.append("中期多頭 (買進)")
-    if "空頭" in ma_s: signals.append("短期空頭 (賣出)")
-    if "空頭" in ma_m: signals.append("中期空頭 (賣出)")
+    # ADX 趨勢強度邏輯
+    trend_str = "強勁趨勢" if d['ADX'] > 25 else "盤整區間"
     
-    if d['RSI'] < 30: signals.append("RSI超賣 (買進)")
-    elif d['RSI'] > 70: signals.append("RSI超買 (賣出)")
+    # 成交量確認
+    vol_str = "爆量確認" if d['Vol_Ratio'] > 1.5 else "量能平穩"
+    if d['Vol_Ratio'] > 1.5 and d['Close'] > d['EMA12']: signals.append("價漲量增 (動能確認)")
     
-    if d['MACD'] > d['Signal']: signals.append("MACD金叉 (買進)")
-    else: signals.append("MACD死叉 (賣出)")
+    # 原始指標整合 (RSI, MACD 等...)
+    if d['RSI'] < 30: signals.append("RSI超賣")
     
-    if d['Close'] > d['UpperBB']: signals.append("突破布林上軌 (買進)")
-    if d['Close'] > d['BoxHigh']: signals.append("突破箱型上緣 (買進)")
-    if d['Close'] < d['LowerBB']: signals.append("跌破布林下軌 (賣出)")
+    # 綜合建議價位計算 (加入 ATR 波動考量)
+    suggested_buy = d['Close'] - (1.5 * d['ATR'])  # 波動支撐買點
+    suggested_sell = d['Close'] + (1.5 * d['ATR']) # 波動壓力賣點
+    stop_loss = d['Close'] - (2.5 * d['ATR'])      # 寬鬆止損位
     
-    buy_cnt = sum(1 for s in signals if "買進" in s)
-    sell_cnt = sum(1 for s in signals if "賣出" in s)
-    total = buy_cnt + sell_cnt
-    win_rate = buy_cnt / total if total > 0 else 0.5
-    return signals, win_rate, ma_s, ma_m, buy_cnt, sell_cnt
+    return signals, trend_str, vol_str, suggested_buy, suggested_sell, stop_loss
 
-# --- 新增：價格建議函式 ---
-def get_trade_advice(d):
-    # 買進建議：參考布林下軌與箱型底部的平均
-    suggested_buy = (d['LowerBB'] + d['BoxLow']) / 2
-    # 賣出建議：參考布林上軌與箱型頂部的平均
-    suggested_sell = (d['UpperBB'] + d['BoxHigh']) / 2
-    return suggested_buy, suggested_sell
-
-# === 3. UI 輔助函式 ===
-def render_card(title, text, color):
-    return f"""
-    <div style='background-color: #f7f9fc; border-left: 6px solid {color}; padding: 12px; margin: 8px 0; border-radius: 4px;'>
-        <div style='color: gray; font-size: 14px;'>{title}</div>
-        <div style='color: {color}; font-size: 18px; font-weight: bold;'>{text}</div>
-    </div>
-    """
-
-# === 4. 主程式迴圈 ===
+# === 4. UI 介面與主程式 ===
 tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
 suffixes = {0: ".T", 1: ".TW", 2: ".HK", 3: ".L", 4: ".DE", 5: ""}
 
 for i, tab in enumerate(tabs):
     with tab:
-        current_stocks = {k: v for k, v in stock_list.items() if (v.endswith(suffixes[i]) if suffixes[i] else "." not in v)}
+        curr_suffix = suffixes[i]
+        stocks = {k: v for k, v in stock_list.items() if (v.endswith(curr_suffix) if curr_suffix else "." not in v)}
         
-        for name, symbol in current_stocks.items():
-            st.subheader(f"{name} ({symbol})")
-            data = yf.download(symbol, start=start_date, end=end_date, interval="1d", progress=False)
+        for name, symbol in stocks.items():
+            data = yf.download(symbol, start=start_date, end=end_date, progress=False)
+            if data.empty or len(data) < 50: continue
             
-            if data.empty or len(data) < 120:
-                st.warning(f"{symbol} 資料不足")
-                continue
+            # 計算所有指標
+            data = calculate_advanced_indicators(data)
+            # 為了相容原本邏輯，計算基礎指標
+            data['RSI'] = ta.rsi(data['Close'], length=14)
+            
+            # 提取最新數據
+            last = data.iloc[-1].to_dict()
+            prev_close = data['Close'].iloc[-2]
+            
+            # 執行進階評估
+            sigs, trend, vol, buy_p, sell_p, sl_p = evaluate_advanced_signals(last)
+            
+            # --- 顯示介面 ---
+            st.subheader(f"{name} ({symbol})")
+            c1, c2, c3, c4 = st.columns(4)
+            
+            with c1:
+                st.metric("當前股價", f"{last['Close']:.2f}", f"{last['Close']-prev_close:+.2f}")
+                st.write(f"📊 **趨勢強度:** {trend} (ADX:{last['ADX']:.1f})")
+                st.write(f"🔊 **量能狀態:** {vol}")
 
-            # 計算指標
-            data['RSI'] = calculate_rsi(data['Close'])
-            data['MACD'], data['Signal'] = calculate_macd(data['Close'])
-            for m in [5, 10, 20, 60, 120]: data[f'{m}MA'] = data['Close'].rolling(m).mean()
-            data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
-            data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
-
-            try:
-                # 數據提取
-                def get_scalar(df, col, idx):
-                    val = df[col].iloc[idx]
-                    return float(val.iloc[0]) if isinstance(val, (pd.Series, pd.DataFrame)) else float(val)
-
-                cols = ['Close', '5MA', '10MA', '20MA', '60MA', '120MA', 'RSI', 'MACD', 'Signal', 'UpperBB', 'LowerBB', 'BoxHigh', 'BoxLow']
-                latest_vals = {c: get_scalar(data, c, -1) for c in cols}
-                prev_close = get_scalar(data, 'Close', -2)
-
-                # 執行評估與價位計算
-                signals, win_rate, ma_s, ma_m, b_cnt, s_cnt = evaluate_signals(latest_vals)
-                buy_price, sell_price = get_trade_advice(latest_vals)
-                kelly_f = calculate_kelly(win_rate)
-                ev = (win_rate * REWARD_RISK_RATIO) - (1 - win_rate)
-
-                # 狀態判斷
-                status_text, status_color = ("建議買進 (多頭強勢) 🟢", "green") if ev > 0.1 and kelly_f > 0 else \
-                                           ("建議賣出 (空頭佔優) 🔴", "red") if ev < -0.1 or s_cnt > b_cnt else \
-                                           ("建議觀望 (趨勢不明) 🟠", "orange")
-
-                # UI 顯示
-                c1, c2, c3, c4 = st.columns(4)
-                with c1:
-                    st.metric("最新收盤價", f"{latest_vals['Close']:.2f}", f"{latest_vals['Close']-prev_close:+.2f}")
-                    st.write(f"**短期:** {ma_s}")
-                    st.write(f"**中期:** {ma_m}")
-                with c2:
-                    st.markdown(render_card("建議買進價位", f"≦ {buy_price:.2f}", "green"), unsafe_allow_html=True)
-                    st.markdown(render_card("建議賣出價位", f"≧ {sell_price:.2f}", "red"), unsafe_allow_html=True)
-                with c3:
-                    st.markdown(render_card("預估勝率", f"{win_rate:.1%}", "blue"), unsafe_allow_html=True)
-                    st.markdown(render_card("凱利建議位階", f"{kelly_f:.1%}", "purple"), unsafe_allow_html=True)
-                with c4:
-                    st.markdown(f"<div style='text-align: center; padding: 20px; border: 2px solid {status_color}; border-radius: 10px;'><h3 style='color: {status_color};'>{status_text}</h3></div>", unsafe_allow_html=True)
-
-                with st.expander("詳細訊號分析"):
-                    st.write(f"買進: {b_cnt} | 賣出: {s_cnt} | 期望值: {ev:.2f}")
-                    st.info(", ".join(signals))
-
-            except Exception as e:
-                st.error(f"{symbol} 運算錯誤: {e}")
+            with c2:
+                st.write("🎯 **進場參考 (ATR/EMA)**")
+                st.info(f"建議買入: {buy_p:.2f}")
+                st.warning(f"建議賣出: {sell_p:.2f}")
+            
+            with c3:
+                st.write("🛡️ **風險管理**")
+                st.error(f"建議止損位: {sl_p:.2f}")
+                st.write(f"波動值 (ATR): {last['ATR']:.2f}")
+                
+            with c4:
+                st.write("💡 **關鍵訊號**")
+                for s in sigs:
+                    st.caption(f"✅ {s}")
+            
             st.divider()
