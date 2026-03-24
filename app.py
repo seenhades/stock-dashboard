@@ -65,14 +65,14 @@ def calculate_box_range(series, period=20):
 
 # === 趨勢與訊號評估函式 ===
 def evaluate_ma_trend(ma5, ma10, ma20):
-    if ma5 > ma10 > ma20: return "短期均線多頭排列 📈"
-    elif ma5 < ma10 < ma20: return "短期均線空頭排列 📉"
-    return "短期均線糾結 🔄"
+    if ma5 > ma10 > ma20: return "短期多頭 📈"
+    elif ma5 < ma10 < ma20: return "短期空頭 📉"
+    return "短期糾結 🔄"
 
 def evaluate_ma_trend_mid(ma20, ma60, ma120):
-    if ma20 > ma60 > ma120: return "中期均線多頭排列 📈"
-    elif ma20 < ma60 < ma120: return "中期均線空頭排列 📉"
-    return "中期均線糾結 🔄"
+    if ma20 > ma60 > ma120: return "中期多頭 📈"
+    elif ma20 < ma60 < ma120: return "中期空頭 📉"
+    return "中期糾結 🔄"
 
 def calculate_expected_value(win_rate, b=REWARD_RISK_RATIO):
     return (win_rate * b) - (1 - win_rate)
@@ -108,9 +108,11 @@ def evaluate_signals(d):
     buy_cnt = sum(1 for s in signals if "買進" in s)
     sell_cnt = sum(1 for s in signals if "賣出" in s)
     total = buy_cnt + sell_cnt
+    
+    # 估計勝率：以買進訊號佔總訊號的比例
     win_rate = buy_cnt / total if total > 0 else 0.5
     
-    return signals, win_rate, ma_s, ma_m
+    return signals, win_rate, ma_s, ma_m, buy_cnt, sell_cnt
 
 # === UI 輔助函式 ===
 def render_card(title, text, color):
@@ -131,14 +133,13 @@ for i, tab in enumerate(tabs):
         
         for name, symbol in current_stocks.items():
             st.subheader(f"{name} ({symbol})")
-            # 確保獲取足夠數據計算 120MA
             data = yf.download(symbol, start=start_date, end=end_date, interval="1d", progress=False)
             
             if data.empty or len(data) < 120:
                 st.warning(f"{symbol} 資料不足 (需至少 120 筆)")
                 continue
 
-            # 計算指標
+            # 指標計算
             data['RSI'] = calculate_rsi(data['Close'])
             data['MACD'], data['Signal'] = calculate_macd(data['Close'])
             data['5MA'] = data['Close'].rolling(5).mean()
@@ -149,24 +150,27 @@ for i, tab in enumerate(tabs):
             data['UpperBB'], data['LowerBB'] = calculate_bollinger_bands(data['Close'])
             data['BoxHigh'], data['BoxLow'] = calculate_box_range(data['Close'])
             
-            # --- 核心修正：解決 ValueError 並確保 Scalar ---
             try:
-                # 定義需要提取的欄位
                 cols = ['Close', '5MA', '10MA', '20MA', '60MA', '120MA', 'RSI', 'MACD', 'Signal', 'UpperBB', 'BoxHigh', 'LowerBB']
-                latest_vals = {}
-                
-                for col in cols:
-                    val = data[col].iloc[-1]
-                    # yfinance 在單一 Ticker 時可能回傳帶層級的 Series，需提取數值
-                    latest_vals[col] = float(val.iloc[0]) if isinstance(val, pd.Series) else float(val)
-                
+                latest_vals = {col: float(data[col].iloc[-1].iloc) if isinstance(data[col].iloc[-1], pd.Series) else float(data[col].iloc[-1]) for col in cols}
                 p_close_val = data['Close'].iloc[-2]
-                prev_close = float(p_close_val.iloc[0]) if isinstance(p_close_val, pd.Series) else float(p_close_val)
+                prev_close = float(p_close_val.iloc) if isinstance(p_close_val, pd.Series) else float(p_close_val)
                 
                 # 執行評估
-                signals, win_rate, ma_s, ma_m = evaluate_signals(latest_vals)
+                signals, win_rate, ma_s, ma_m, b_cnt, s_cnt = evaluate_signals(latest_vals)
                 ev = calculate_expected_value(win_rate)
                 kelly_f = calculate_kelly(win_rate)
+
+                # --- 最終建議邏輯與顏色決定 ---
+                if ev > 0.1 and kelly_f > 0:
+                    status_text = "🟢 建議買進 (多頭強勢)"
+                    status_color = "green"
+                elif ev < -0.1 or s_cnt > b_cnt:
+                    status_text = "🔴 建議賣出 (空頭佔優)"
+                    status_color = "red"
+                else:
+                    status_text = "🟠 建議觀望 (趨勢不明)"
+                    status_color = "orange"
 
                 # 畫面顯示
                 c1, c2, c3 = st.columns(3)
@@ -176,17 +180,24 @@ for i, tab in enumerate(tabs):
                     st.write(f"**中期:** {ma_m}")
                 
                 with c2:
-                    ev_color = "green" if ev > 0 else "red"
-                    st.markdown(render_card("期望值 (EV)", f"{ev:.2f}", ev_color), unsafe_allow_html=True)
+                    ev_ui_color = "green" if ev > 0 else "red"
+                    st.markdown(render_card("期望值 (EV)", f"{ev:.2f}", ev_ui_color), unsafe_allow_html=True)
                     st.markdown(render_card("估計勝率", f"{win_rate:.1%}", "blue"), unsafe_allow_html=True)
 
                 with c3:
-                    kelly_color = "green" if kelly_f > 0.2 else "orange" if kelly_f > 0 else "red"
-                    st.markdown(render_card("凱利建議位階 (Kelly %)", f"{kelly_f:.1%}", kelly_color), unsafe_allow_html=True)
-                    status = "🟢 建議買進" if ev > 0 and kelly_f > 0 else "🔴 建議觀望"
-                    st.markdown(f"### 最終建議: {status}")
+                    # 顯示凱利建議
+                    kelly_ui_color = "green" if kelly_f > 0.1 else "orange" if kelly_f > 0 else "red"
+                    st.markdown(render_card("凱利建議位階 (Kelly %)", f"{kelly_f:.1%}", kelly_ui_color), unsafe_allow_html=True)
+                    
+                    # 最終燈號顯示
+                    st.markdown(f"""
+                        <div style='text-align: center; padding: 10px; border: 2px solid {status_color}; border-radius: 10px;'>
+                            <h3 style='color: {status_color}; margin: 0;'>{status_text}</h3>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                with st.expander("觸發訊號清單"):
+                with st.expander("觸發訊號詳情"):
+                    st.write(f"買進訊號數: {b_cnt} | 賣出訊號數: {s_cnt}")
                     st.write(", ".join(signals))
 
             except Exception as e:
