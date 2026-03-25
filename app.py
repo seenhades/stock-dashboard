@@ -14,7 +14,8 @@ stock_list = {
     "NTT 日本電信": "9432.T", "英業達": "2356.TW", "希華": "2484.TW",
     "晶彩科": "3535.TW", "群電": "6412.TW", "康舒": "6282.TW",
     "台中銀": "2812.TW", "台新金": "2887.TW", "工信": "5521.TW",
-    "華上生醫": "7427.TWO", "光洋科": "1785.TWO", "碧桂園": "2007.HK",
+    "華上生醫": "7427.TWO", "光洋科": "1785.TWO", "黃金股ETF": "517520.SS",
+    "中國核電": "601985.SS", "許繼電氣": "000400.SZ", "碧桂園": "2007.HK",
     "香港中華燃氣": "0003.HK", "國泰航空": "0293.HK", "Rolls Royce": "RR.L", 
     "Shell": "SHEL.L", "Porsche SE": "PAH3.DE", "Porsche AG": "P911.DE",
     "Organon 歐嘉隆": "OGN", "Pfizer 輝瑞": "PFE", "Tower Semi": "TSEM"
@@ -91,14 +92,16 @@ def render_card(title, text, color):
     """
 
 # === 4. 主程式迴圈 ===
-tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
-tab_suffix = {0: ".T", 1: ".TW", 2: ".HK", 3: ".L", 4: ".DE", 5: "USA"}
+tabs = st.tabs(["🇯🇵 日本", "🇹🇼 台灣","🇨🇳 中國", "🇭🇰 香港", "🇬🇧 英國", "🇩🇪 德國", "🇺🇸 美國"])
+tab_suffix = {0: ".T", 1: ".TW", 2: "CN", 3: ".HK", 4: ".L", 5: ".DE", 6: "USA"}
 
 for i, tab in enumerate(tabs):
     with tab:
         suffix = tab_suffix[i]
         # 過濾該區域股票
-        if suffix == ".TW":
+        if suffix == "CN":
+            stocks = {k: v for k, v in stock_list.items() if v.endswith(".SS") or v.endswith(".SZ")}
+        elif suffix == ".TW":
             stocks = {k: v for k, v in stock_list.items() if v.endswith(".TW") or v.endswith(".TWO")}
         elif suffix == "USA":
             stocks = {k: v for k, v in stock_list.items() if "." not in v}
