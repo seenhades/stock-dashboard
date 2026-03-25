@@ -137,6 +137,8 @@ for i, tab in enumerate(tabs):
             risk = max(last['Close'] - stop_l, 1e-9)
             b_odds = reward / risk
             ev = (win_p * b_odds) - (1 - win_p)
+            actual_ev_money = (win_p * reward) - ((1 - win_p) * risk)
+            expected_return_pct = (actual_ev_money / last['Close']) * 100
             kelly_f = max(ev / (b_odds + 1e-9), 0)
 
             # --- 評分系統 ---
@@ -176,6 +178,7 @@ for i, tab in enumerate(tabs):
                 st.write("📊 **資金管理 (Kelly)**")
                 st.write(f"預期勝率: `{win_p*100:.0f}%` / 賠率: `{float(b_odds):.2f}`")
                 st.write(f"交易期望值: `{float(ev):.2f}`")
+                st.metric("預期報酬率", f"{float(expected_return_pct):.2f}%")
                 st.success(f"建議倉位: **{float(kelly_f)*100:.1f}%**")
                 st.caption("*(建議使用半凱利，即減半投入)*")
 
