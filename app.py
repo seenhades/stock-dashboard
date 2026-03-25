@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 
 # === 1. 設定區 ===
-st.set_page_config(layout="wide", page_title="股票量化監控系統 (穩定修復版)")
-st.title("🚀 股票交易監控系統 (含凱利公式資金管理)")
+st.set_page_config(layout="wide", page_title="股價監控系統")
+st.title("🚀 股價交易監控")
 
 # 股票清單
 stock_list = {
