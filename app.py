@@ -98,7 +98,9 @@ for i, tab in enumerate(tabs):
     with tab:
         suffix = tab_suffix[i]
         # 過濾該區域股票
-        if suffix == "USA":
+        if suffix == ".TW":
+            stocks = {k: v for k, v in stock_list.items() if v.endswith(".TW") or v.endswith(".TWO")}
+        elif suffix == "USA":
             stocks = {k: v for k, v in stock_list.items() if "." not in v}
         else:
             stocks = {k: v for k, v in stock_list.items() if v.endswith(suffix)}
