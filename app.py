@@ -19,7 +19,7 @@ stock_list = {
     "香港中華燃氣": "0003.HK", "國泰航空": "0293.HK", "Rolls Royce": "RR.L", 
     "Shell": "SHEL.L", "Porsche SE": "PAH3.DE", "Porsche AG": "P911.DE",
     "Organon 歐嘉隆": "OGN", "Pfizer 輝瑞": "PFE", "Tower Semi": "TSEM"
-    "精誠": "6214.TW",
+    "陽明": "2609.TW",
 }
 
 # 設定日期 (設為明天以確保抓到今日最新收盤)
