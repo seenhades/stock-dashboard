@@ -21,7 +21,7 @@ stock_list = {
     "黃金股ETF": "517520.SS", "許繼電氣": "000400.SZ", "碧桂園": "2007.HK",
     "香港中華燃氣": "0003.HK", "國泰航空": "0293.HK", "Rolls Royce": "RR.L", 
     "Shell": "SHEL.L", "Porsche SE": "PAH3.DE", "Porsche AG": "P911.DE",
-    "Tower Semi": "TSEM", "Pfizer 輝瑞": "PFE", "Organon 歐嘉隆": "OGN",
+    "Tower Semi": "TSEM", "Pfizer 輝瑞": "PFE", "Organon 歐嘉隆": "OGN","美超微": "SMCI",
 }
 
 # 設定日期 (設為明天以確保抓到今日最新收盤)
